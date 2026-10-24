@@ -1,23 +1,913 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MarketRent</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; text-align: center; background: #f5f5f5; }
-    header { background: #1e3a8a; color: white; padding: 40px 20px; }
-    section { padding: 30px 20px; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Monthly shop rent ledger with tenant login, online payment details and signed receipts.">
+<title>Shop Rent Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Hind:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+html{color-scheme:light}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+.linkbtn{display:inline-flex;align-items:center;font-weight:600;text-decoration:none;color:var(--muted);padding:6px 11px;border-radius:8px;min-height:34px;font-size:.88rem}
+.linkbtn:hover{color:var(--accent)}
+.textlink{color:var(--accent);font-weight:600;background:none;border:0;padding:0;min-height:0;cursor:pointer;text-decoration:underline}
+
+/* Layout: a ledger book — month bar and collection summary on top, one row per shop, receipts open as sheets */
+:root{
+  --bg:#f3f6f4; --paper:#ffffff; --ink:#15231e; --muted:#5d6f68; --line:#d9e2dd; --sunk:#eaf0ec;
+  --accent:#0d5c4a; --accent-ink:#ffffff; --accent-soft:#e1efe9;
+  --ok:#1f7a45; --ok-soft:#e2f3e8; --due:#a3560b; --due-soft:#fbeedd; --bad:#b3261e; --bad-soft:#fbe4e2;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Hind","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1714; --paper:#16211d; --ink:#e4ede9; --muted:#93a59e; --line:#2a3833; --sunk:#121c19;
+  --accent:#4fbf9c; --accent-ink:#06231a; --accent-soft:#1c3a31;
+  --ok:#5fd18f; --ok-soft:#163a26; --due:#f0a453; --due-soft:#3b2a14; --bad:#f08a82; --bad-soft:#3d1c1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1714; --paper:#16211d; --ink:#e4ede9; --muted:#93a59e; --line:#2a3833; --sunk:#121c19;
+  --accent:#4fbf9c; --accent-ink:#06231a; --accent-soft:#1c3a31;
+  --ok:#5fd18f; --ok-soft:#163a26; --due:#f0a453; --due-soft:#3b2a14; --bad:#f08a82; --bad-soft:#3d1c1a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5}
+.wrap{max-width:1000px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:1.45rem;font-weight:800} h2{font-size:1.2rem;font-weight:800} h3{font-size:1.02rem;font-weight:600}
+p{margin:0}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{width:40px;height:40px;flex:none;border-radius:9px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--f-mono);font-weight:600;font-size:15px}
+.sub{color:var(--muted);font-size:.92rem}
+.note{color:var(--muted);font-size:.86rem}
+.err{color:var(--bad);font-size:.9rem}
+.chip{font-size:.72rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;padding:4px 10px;border-radius:99px;background:var(--accent-soft);color:var(--accent)}
+.lbl{font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.stack{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.spread{justify-content:space-between}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+button{font:inherit;font-weight:600;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:9px 14px;cursor:pointer;min-height:40px}
+button:hover:not(:disabled){border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:default}
+:is(button,input,select):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.danger{color:var(--bad)}
+.danger.armed{background:var(--bad-soft);border-color:var(--bad)}
+.small{padding:6px 11px;min-height:34px;font-size:.88rem}
+input,select{font:inherit;width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);min-height:42px}
+label{display:flex;flex-direction:column;gap:4px;font-size:.88rem;color:var(--muted);font-weight:500;min-width:0}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tabs button{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;color:var(--muted);padding:8px 12px}
+.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+/* toolbar */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.monthnav{display:flex;align-items:center;gap:6px}
+.monthnav b{font-family:var(--f-display);font-size:1.08rem;min-width:9.5em;text-align:center}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.filters input{width:220px;max-width:100%}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--paper)}
+.seg button{border:0;border-radius:0;min-height:38px;padding:6px 12px;font-size:.88rem;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+/* summary */
+.summary{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.figs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.figs>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.big{font-family:var(--f-mono);font-size:1.25rem;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.big.ok{color:var(--ok)} .big.due{color:var(--due)} .big.bad{color:var(--bad)}
+.bar{height:10px;border-radius:99px;background:var(--sunk);overflow:hidden}
+.bar span{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
+/* ledger */
+.ledger{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);overflow:hidden}
+.shop{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px 16px;border-left:4px solid var(--due)}
+.shop.paid{border-left-color:var(--ok)}
+.shop.idle{border-left-color:var(--line)}
+.shop+.shop{border-top:1px solid var(--line)}
+.who{min-width:0;display:flex;flex-direction:column;gap:2px}
+.who h3{overflow-wrap:anywhere}
+.meta{color:var(--muted);font-size:.88rem;overflow-wrap:anywhere}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:600;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.due{background:var(--due-soft);color:var(--due)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.idle{background:var(--sunk);color:var(--muted)}
+.state{display:flex;flex-direction:column;gap:4px;align-items:flex-start;min-width:0}
+.acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.code{font-family:var(--f-mono);font-weight:600;letter-spacing:.08em;background:var(--accent-soft);color:var(--accent);padding:1px 7px;border-radius:6px}
+.empty{padding:30px 18px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+.empty p{max-width:46ch}
+@media (max-width:720px){
+  .shop{grid-template-columns:1fr}
+  .acts{justify-content:flex-start}
+  .figs{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .filters input{width:100%}
+  .filters{width:100%}
+}
+/* sheets */
+.overlay{position:fixed;inset:0;background:rgba(10,20,16,.5);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{background:var(--bg);width:100%;max-width:560px;border-radius:14px 14px 0 0;padding:20px max(18px,env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px;max-height:92vh;overflow:auto}
+@media (min-width:720px){.overlay{align-items:center}.sheet{border-radius:14px}}
+.months{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
+.mchip{font-size:.85rem;padding:6px 4px;min-height:46px;line-height:1.2}
+.mchip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.mchip small{display:block;font-weight:500;opacity:.8;font-size:.72rem}
+.total{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px;border-radius:8px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+/* tenant */
+.account{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.account .head{padding:18px;display:flex;flex-direction:column;gap:4px;border-bottom:1px dashed var(--line)}
+.status{margin:18px;padding:18px;border-radius:var(--r);display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.status.ok{background:var(--ok-soft);color:var(--ok)} .status.due{background:var(--due-soft);color:var(--due)}
+.status strong{font-family:var(--f-display);font-size:1.5rem;line-height:1.2}
+.hist{list-style:none;margin:0;padding:0 18px 18px;display:flex;flex-direction:column}
+.hist li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.acct{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:8px;flex-wrap:wrap;background:var(--paper)}
+.acct>div{min-width:0}
+.acct .mono{overflow-wrap:anywhere}
+.steps{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:.9rem}
+/* receipt: drawn once as an image so screen and download match exactly */
+.receipt-img{display:block;width:100%;height:auto;border-radius:8px;border:1px solid var(--line);box-shadow:0 6px 24px rgba(10,30,22,.12);background:#fff}
+.receipt-wait{aspect-ratio:760/1000;max-width:100%;display:grid;place-items:center;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}
+/* signature pad: the paper stays white in both themes, like a real receipt */
+.sigpad{display:flex;flex-direction:column;gap:8px}
+.sigpad canvas{width:100%;max-width:100%;aspect-ratio:3/1;background:#ffffff;border:1px dashed var(--line);border-radius:8px;touch-action:none;cursor:crosshair}
+.sigpad .hint{position:relative}
+.sigpad .hint span{position:absolute;left:12px;bottom:10px;font-size:.8rem;color:#8a978f;pointer-events:none}
+/* months report */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--sunk)}
+td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:0}
+tr.clickable{cursor:pointer}
+tr.clickable:hover td{background:var(--accent-soft)}
+tr.current td:first-child{box-shadow:inset 3px 0 0 var(--accent);font-weight:600}
+.minibar{width:90px;height:8px;border-radius:99px;background:var(--sunk);overflow:hidden;display:inline-block;vertical-align:middle}
+.minibar span{display:block;height:100%;background:var(--ok)}
+.grid td.cell{text-align:center;padding:6px}
+.grid th.sticky,.grid td.sticky{position:sticky;left:0;background:var(--paper);z-index:1;max-width:170px;overflow:hidden;text-overflow:ellipsis}
+.grid th.sticky{background:var(--sunk)}
+.dot{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:7px;font-weight:600;font-size:.85rem;border:0;padding:0;min-height:0}
+.dot.ok{background:var(--ok-soft);color:var(--ok)} .dot.due{background:var(--due-soft);color:var(--due)} .dot.idle{background:transparent;color:var(--line)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;color:var(--muted);align-items:center}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;z-index:30;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(16px);opacity:.6}}}
+@media (prefers-reduced-motion:reduce){.bar span{transition:none}}
+</style>
 </head>
 <body>
-  <header>
-    <h1>MarketRent</h1>
-    <p>Welcome to our website</p>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">Rs</div>
+      <div><h1>Shop Rent Ledger</h1><p class="sub" id="subtitle">Every shop's monthly rent in one place</p></div>
+    </div>
+    <div class="row"><span class="chip" id="role" hidden></span><a class="small ghost linkbtn" id="landlord" href="#landlord">Landlord login</a><button class="small ghost" id="logout" hidden>Log out</button></div>
   </header>
-  <section>
-    <h2>Coming Soon</h2>
-    <p>Hamari website jald aa rahi hai.</p>
-  </section>
+  <main id="app" aria-live="polite"><div class="panel"><p class="sub">Opening the ledger…</p></div></main>
+</div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+"use strict";
+/* =========================================================
+   0. Firebase settings: paste yours here (see README.md)
+   ========================================================= */
+const FIREBASE_CONFIG={
+  apiKey:"PASTE_API_KEY",
+  authDomain:"PASTE_PROJECT_ID.firebaseapp.com",
+  projectId:"PASTE_PROJECT_ID",
+  storageBucket:"PASTE_PROJECT_ID.appspot.com",
+  messagingSenderId:"PASTE_SENDER_ID",
+  appId:"PASTE_APP_ID",
+};
+/* =========================================================
+   1. Utilities
+   ========================================================= */
+const MONTH_NAMES=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const Month={
+  key:(d=new Date())=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"),
+  label:k=>{const[y,m]=k.split("-");return MONTH_NAMES[+m-1]+" "+y},
+  short:k=>{const[y,m]=k.split("-");return MONTH_NAMES[+m-1].slice(0,3)+" "+y},
+  shift:(k,n)=>{const[y,m]=k.split("-").map(Number);return Month.key(new Date(y,m-1+n,1))},
+  /** Inclusive list of month keys from a to b. */
+  range:(a,b)=>{const out=[];for(let k=a;k<=b&&out.length<240;k=Month.shift(k,1))out.push(k);return out},
+};
+const NOW=Month.key();
+const money=n=>"Rs "+Number(n||0).toLocaleString("en-PK");
+const todayISO=()=>new Date().toLocaleDateString("en-CA");
+const prettyDate=iso=>{if(!iso)return"";const d=new Date(iso+"T00:00:00");return isNaN(d)?iso:d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})};
+const randomFrom=(chars,n)=>[...crypto.getRandomValues(new Uint8Array(n))].map(x=>chars[x%chars.length]).join("");
+const newCode=()=>randomFrom("ABCDEFGHJKMNPQRSTUVWXYZ23456789",6);
+const newPin=()=>randomFrom("0123456789",4);
+/** The tenant's record id is derived from code + PIN, so only someone holding both can open it. */
+async function recordKey(code,pin){
+  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(code.toUpperCase()+":"+pin+":karaya"));
+  return[...new Uint8Array(buf)].slice(0,12).map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+const receiptNo=(code,m)=>code+"-"+m.replace("-","");
+const local={
+  get:k=>{try{return localStorage.getItem(k)}catch{return null}},
+  set:(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch{}},
+};
+
+/** Tiny DOM builder: h("div",{class:"x",onclick:fn},child,...). Text is always set as text, never HTML. */
+function h(tag,attrs={},...kids){
+  const e=document.createElement(tag);
+  for(const[k,v]of Object.entries(attrs||{})){
+    if(v===false||v==null)continue;
+    if(k==="class")e.className=v;
+    else if(k.startsWith("on"))e.addEventListener(k.slice(2),v);
+    else if(k in e&&typeof v!=="string")e[k]=v;
+    else e.setAttribute(k,v===true?"":v);
+  }
+  for(const c of kids.flat(Infinity)){if(c==null||c===false)continue;e.append(c instanceof Node?c:document.createTextNode(String(c)))}
+  return e;
+}
+const $=s=>document.querySelector(s);
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.hidden=true,2600)}
+async function copyText(text,done="Copied"){try{await navigator.clipboard.writeText(text);toast(done)}catch{toast("Couldn't copy. Please select the text and copy it yourself.")}}
+/** A delete button that needs a second tap within 4 seconds. */
+function confirmButton(label,onConfirm){
+  const b=h("button",{class:"small danger",type:"button"},label);
+  let timer;
+  b.addEventListener("click",async()=>{
+    if(!b.classList.contains("armed")){b.classList.add("armed");b.textContent="Tap again to confirm";timer=setTimeout(()=>{b.classList.remove("armed");b.textContent=label},4000);return}
+    clearTimeout(timer);b.disabled=true;await onConfirm();
+  });
+  return b;
+}
+
+/* =========================================================
+   2. Domain logic (pure functions)
+   ========================================================= */
+const Ledger={
+  isActive:(shop,m)=>(shop.since||"0000-00")<=m,
+  paidFor:(shop,m)=>(shop.paid||{})[m]||null,
+  /** Months up to `upTo` that have no payment recorded. */
+  dueMonths:(shop,upTo=NOW)=>Month.range(shop.since||upTo,upTo).filter(k=>!Ledger.paidFor(shop,k)),
+  arrears:(shop,upTo=NOW)=>Ledger.dueMonths(shop,upTo).length*(Number(shop.rent)||0),
+  summary(shops,m){
+    const active=shops.filter(s=>Ledger.isActive(s,m));
+    const expected=active.reduce((a,s)=>a+(Number(s.rent)||0),0);
+    const collected=active.reduce((a,s)=>a+(Number(Ledger.paidFor(s,m)?.amount)||0),0);
+    const paidCount=active.filter(s=>Ledger.paidFor(s,m)).length;
+    const arrears=shops.reduce((a,s)=>a+Ledger.arrears(s),0);
+    return{expected,collected,outstanding:Math.max(0,expected-collected),paidCount,activeCount:active.length,arrears};
+  },
+  /** The only fields a tenant is allowed to see. Phone and PIN stay private. */
+  publicView:s=>({shop:s.name,tenant:s.tenant,rent:Number(s.rent)||0,code:s.code,since:s.since||NOW,paid:s.paid||{}}),
+};
+
+/* =========================================================
+   3. Data layer (all reads and writes go through here)
+   ========================================================= */
+const Data={
+  db:null,
+  watchShops:cb=>Data.db.collection("shops").onSnapshot(s=>cb(s.docs.map(d=>({id:d.id,...d.data()}))),e=>toast(e&&e.code==="permission-denied"?"This account is not the landlord account set in the Firestore rules.":"Couldn't load your shops. Please reload the page.")),
+  watchSettings:cb=>Data.db.doc("public/settings").onSnapshot(s=>cb(s.exists?s.data():{}),()=>{}),
+  watchRecord:(key,cb)=>Data.db.doc("status/"+key).onSnapshot(s=>cb(s.exists?s.data():null),()=>cb(null)),
+  /** Saves the private shop record and its public mirror; removes the old mirror when code or PIN changed. */
+  async saveShop(id,shop,previousKey){
+    const{id:_ignore,...data}=shop;
+    data.key=await recordKey(data.code,data.pin);
+    await Data.db.doc("shops/"+id).set(data);
+    await Data.db.doc("status/"+data.key).set(Ledger.publicView(data));
+    if(previousKey&&previousKey!==data.key)await Data.db.doc("status/"+previousKey).delete();
+  },
+  async deleteShop(shop){
+    if(shop.key)await Data.db.doc("status/"+shop.key).delete();
+    await Data.db.doc("shops/"+shop.id).delete();
+  },
+  saveSettings:d=>Data.db.doc("public/settings").set(d),
+};
+
+/* =========================================================
+   4. State and rendering loop
+   ========================================================= */
+const LOGIN_KEY="karaya-login";
+const state={
+  ready:false, owner:false, downloads:null,
+  shops:[], settings:{},
+  month:NOW, tab:"ledger", query:"", filter:"all", settingsDirty:false,
+  tenant:{key:null,record:undefined,unsub:null,error:""},
+};
+let frame=0;
+function render(){if(!frame)frame=requestAnimationFrame(()=>{frame=0;draw()})}
+let mounted=null; // which screen is currently mounted, so we update instead of rebuilding inputs
+function draw(){
+  if(!state.ready)return;
+  const app=$("#app"), signedIn=state.owner||!!state.tenant.record, onLandlordPage=location.hash==="#landlord";
+  if(state.settings.market)$("#subtitle").textContent=state.settings.market;
+  const role=$("#role");role.textContent=state.owner?"Landlord":"Tenant";role.hidden=!signedIn;
+  $("#logout").hidden=!signedIn;
+  $("#landlord").hidden=signedIn||!!state.tenant.key||onLandlordPage;
+  if(state.owner){
+    if(mounted!=="owner"){app.replaceChildren(OwnerScreen.mount());mounted="owner"}
+    OwnerScreen.update();
+  }else if(state.tenant.key){
+    mounted="tenant";app.replaceChildren(TenantScreen(state.tenant.record));
+  }else if(onLandlordPage){
+    if(mounted!=="landlord"){app.replaceChildren(LandlordLoginScreen());mounted="landlord"}
+  }else if(mounted!=="login"){
+    app.replaceChildren(LoginScreen());mounted="login";
+  }
+}
+
+/* =========================================================
+   5. Shared components
+   ========================================================= */
+function openSheet(title,build){
+  const overlay=h("div",{class:"overlay"});
+  const prevFocus=document.activeElement;
+  const close=()=>{overlay.remove();document.removeEventListener("keydown",onKey);prevFocus?.focus?.()};
+  const onKey=e=>{if(e.key==="Escape")close()};
+  overlay.addEventListener("click",e=>{if(e.target===overlay)close()});
+  document.addEventListener("keydown",onKey);
+  overlay.append(h("div",{class:"sheet",role:"dialog","aria-modal":"true","aria-label":title},
+    h("div",{class:"row spread"},h("h2",{},title),h("button",{class:"small ghost",type:"button",onclick:close},"Close")),
+    build(close)));
+  document.body.append(overlay);
+  overlay.querySelector("input,select,button.primary")?.focus();
+  return close;
+}
+function field(label,input,hint){return h("label",{},label,input,hint?h("span",{class:"note"},hint):null)}
+
+/* ---------- receipt ---------- */
+/** 25000 -> "Twenty-Five Thousand", using the Pakistani lakh / crore system. */
+function amountInWords(n){
+  n=Math.floor(Math.abs(Number(n)||0));
+  if(n===0)return"Zero";
+  const ones=["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
+  const tens=["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+  const two=x=>x<20?ones[x]:tens[Math.floor(x/10)]+(x%10?"-"+ones[x%10]:"");
+  const three=x=>(x>=100?ones[Math.floor(x/100)]+" Hundred"+(x%100?" ":""):"")+(x%100?two(x%100):"");
+  const parts=[];
+  for(const[size,name]of[[1e7,"Crore"],[1e5,"Lakh"],[1e3,"Thousand"]]){
+    if(n>=size){const q=Math.floor(n/size);parts.push((q>=100?three(q):two(q))+" "+name);n%=size}
+  }
+  if(n)parts.push(three(n));
+  return parts.join(" ");
+}
+
+function openReceipt(rec,m){
+  const p=rec.paid?.[m];if(!p)return;
+  openSheet("Rent receipt",()=>{
+    const holder=h("div",{class:"receipt-wait"},"Preparing receipt…");
+    const save=h("button",{class:"primary",type:"button",disabled:true},"Download receipt (image)");
+    let blob=null;
+    drawReceipt(rec,m,p,state.settings).then(b=>{
+      blob=b;
+      const img=h("img",{class:"receipt-img",src:URL.createObjectURL(b),alt:"Rent receipt "+(p.no||"")+": "+money(p.amount)+" for "+rec.shop+", "+Month.label(m)+", paid "+prettyDate(p.date)});
+      holder.replaceWith(img);save.disabled=false;
+    }).catch(()=>{holder.textContent="Couldn't prepare the receipt. Please try again."});
+    save.addEventListener("click",async()=>{
+      if(!blob)return;save.disabled=true;
+      try{await state.downloads.save({filename:"Rent-receipt-"+(p.no||m)+".png",data:blob});toast("Receipt saved")}
+      catch(e){toast(e?.code==="declined"?"Download cancelled":"Couldn't download. Take a screenshot instead.")}
+      save.disabled=false;
+    });
+    return h("div",{class:"stack"},holder,state.downloads?save:h("p",{class:"note"},"Take a screenshot to keep this receipt."));
+  });
+}
+
+/** Draws the receipt as a printable image. Fixed paper colours: a receipt looks the same in light and dark mode. */
+async function drawReceipt(rec,m,p,st){
+  try{await document.fonts.ready}catch{}
+  const C={ink:"#15231e",muted:"#5d6f68",line:"#d5ded9",band:"#0d5c4a",soft:"#e9f3ee",stamp:"#1f7a45",sig:"#1b2a6b"};
+  const F={display:"'Bricolage Grotesque',sans-serif",body:"Hind,sans-serif",mono:"'IBM Plex Mono',monospace"};
+  const W=760,H=1000,PAD=48,c=document.createElement("canvas");
+  c.width=W*2;c.height=H*2;const g=c.getContext("2d");g.scale(2,2);
+  const text=(s,x,y,font,color,align="left")=>{g.font=font;g.fillStyle=color;g.textAlign=align;g.fillText(s,x,y);g.textAlign="left"};
+  const fit=(s,maxW,font)=>{g.font=font;s=String(s??"");if(g.measureText(s).width<=maxW)return s;while(s.length&&g.measureText(s+"…").width>maxW)s=s.slice(0,-1);return s+"…"};
+  const wrap=(s,x,y,maxW,lh,font,color)=>{g.font=font;g.fillStyle=color;let line="";for(const w of s.split(" ")){const t=line?line+" "+w:w;if(g.measureText(t).width>maxW&&line){g.fillText(line,x,y);y+=lh;line=w}else line=t}g.fillText(line,x,y);return y+lh};
+  const rule=(y,dash)=>{g.setLineDash(dash?[5,5]:[]);g.strokeStyle=C.line;g.lineWidth=1;g.beginPath();g.moveTo(PAD,y);g.lineTo(W-PAD,y);g.stroke();g.setLineDash([])};
+  const no=p.no||receiptNo(rec.code||"",m);
+
+  // paper and perforated edge
+  g.fillStyle="#ffffff";g.fillRect(0,0,W,H);
+  g.strokeStyle=C.line;g.lineWidth=1;g.strokeRect(10.5,10.5,W-21,H-21);
+
+  // header band
+  g.fillStyle=C.band;g.fillRect(10,10,W-20,132);
+  text(fit(st.market||"Shop Rent Ledger",W-PAD*2-220,"800 32px "+F.display),PAD,70,"800 32px "+F.display,"#ffffff");
+  text("RENT RECEIPT",PAD,104,"600 15px "+F.body,"#cfe7dd");
+  text("No. "+no,W-PAD,70,"600 17px "+F.mono,"#ffffff","right");
+  text("Issued "+prettyDate(p.date),W-PAD,100,"500 15px "+F.body,"#cfe7dd","right");
+
+  // statement
+  let y=wrap("Received with thanks from "+rec.tenant+" the sum below, as rent for "+rec.shop+" for the month of "+Month.label(m)+".",PAD,196,W-PAD*2-150,30,"500 20px "+F.body,C.ink);
+
+  // amount box
+  y+=8;
+  g.fillStyle=C.soft;g.beginPath();g.roundRect?g.roundRect(PAD,y,W-PAD*2,128,12):g.rect(PAD,y,W-PAD*2,128);g.fill();
+  text("AMOUNT RECEIVED",PAD+24,y+34,"600 13px "+F.body,C.muted);
+  text(money(p.amount),PAD+24,y+82,"600 44px "+F.mono,C.ink);
+  text(fit("Rupees "+amountInWords(p.amount)+" only",W-PAD*2-200,"italic 500 17px "+F.body),PAD+24,y+112,"italic 500 17px "+F.body,C.muted);
+
+  // round PAID stamp over the box
+  g.save();g.translate(W-PAD-86,y+64);g.rotate(-0.18);g.globalAlpha=.9;
+  g.strokeStyle=C.stamp;g.lineWidth=3;g.beginPath();g.arc(0,0,62,0,Math.PI*2);g.stroke();
+  g.lineWidth=1.5;g.beginPath();g.arc(0,0,54,0,Math.PI*2);g.stroke();
+  text("PAID",0,10,"800 32px "+F.display,C.stamp,"center");
+  text(Month.short(m).toUpperCase(),0,32,"600 12px "+F.body,C.stamp,"center");
+  text("RENT",0,-22,"600 12px "+F.body,C.stamp,"center");
+  g.restore();
+
+  // details
+  y+=170;
+  const details=[["Shop",rec.shop],["Tenant",rec.tenant],["Rent month",Month.label(m)],["Payment date",prettyDate(p.date)],["Payment method",p.method],["Transaction ID",p.txn||"—"],["Monthly rent",money(rec.rent)]];
+  text("PAYMENT DETAILS",PAD,y,"600 13px "+F.body,C.muted);y+=14;rule(y);
+  for(const[label,val]of details){
+    y+=38;text(label,PAD,y,"500 18px "+F.body,C.muted);
+    text(fit(val,W-PAD*2-220,"600 19px "+F.body),W-PAD,y,"600 19px "+F.body,C.ink,"right");
+    y+=14;rule(y,true);
+  }
+
+  // signature block (bottom right) and thanks (bottom left)
+  const sigY=H-170, sigX=W-PAD-260;
+  if(st.signature){
+    try{const img=new Image();img.src=st.signature;await img.decode();
+      const s=Math.min(240/img.width,90/img.height);const w=img.width*s,hh=img.height*s;
+      g.drawImage(img,sigX+(260-w)/2,sigY-hh+6,w,hh)}catch{}
+  }
+  g.strokeStyle=C.ink;g.lineWidth=1.2;g.beginPath();g.moveTo(sigX,sigY+14);g.lineTo(W-PAD,sigY+14);g.stroke();
+  text(fit(st.owner||"Landlord",260,"600 17px "+F.body),sigX+130,sigY+40,"600 17px "+F.body,C.ink,"center");
+  text("Landlord's signature",sigX+130,sigY+62,"500 14px "+F.body,C.muted,"center");
+  text("Thank you for your payment.",PAD,sigY+14,"600 18px "+F.body,C.ink);
+  if(st.whatsapp)text("Questions: WhatsApp "+st.whatsapp,PAD,sigY+40,"500 15px "+F.body,C.muted);
+
+  // footer
+  rule(H-60);
+  text("This receipt was issued from Shop Rent Ledger and is valid with the landlord's signature.",W/2,H-34,"500 13px "+F.body,C.muted,"center");
+  return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error("toBlob")),"image/png"));
+}
+
+/** Draw-or-upload signature pad. value() returns a trimmed transparent PNG data URL, or "" when empty. */
+function SignaturePad(initial,onChange){
+  const W=600,H=200,c=h("canvas",{width:W*2,height:H*2,"aria-label":"Signature pad: draw your signature with your finger or mouse"});
+  const g=c.getContext("2d");g.scale(2,2);
+  let hasInk=false,drawing=false,last=null;
+  const pen=()=>{g.strokeStyle="#1b2a6b";g.lineWidth=2.6;g.lineCap="round";g.lineJoin="round"};
+  const pos=e=>{const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}};
+  const placeImage=src=>new Promise(res=>{const img=new Image();img.onload=()=>{g.clearRect(0,0,W,H);const s=Math.min((W-20)/img.width,(H-20)/img.height);g.drawImage(img,(W-img.width*s)/2,(H-img.height*s)/2,img.width*s,img.height*s);hasInk=true;res()};img.onerror=()=>res();img.src=src});
+  c.addEventListener("pointerdown",e=>{e.preventDefault();c.setPointerCapture(e.pointerId);drawing=true;last=pos(e);pen();g.beginPath();g.arc(last.x,last.y,1.2,0,Math.PI*2);g.fillStyle="#1b2a6b";g.fill();hasInk=true;onChange()});
+  c.addEventListener("pointermove",e=>{if(!drawing)return;const p=pos(e);pen();g.beginPath();g.moveTo(last.x,last.y);g.lineTo(p.x,p.y);g.stroke();last=p});
+  const end=()=>{drawing=false};c.addEventListener("pointerup",end);c.addEventListener("pointercancel",end);
+  if(initial)placeImage(initial);
+  const file=h("input",{type:"file",accept:"image/*",hidden:true,onchange:e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=async()=>{await placeImage(r.result);onChange()};r.readAsDataURL(f);e.target.value=""}});
+  const el=h("div",{class:"sigpad"},
+    h("div",{class:"hint"},c,h("span",{},"Sign here")),
+    h("div",{class:"row"},
+      h("button",{class:"small",type:"button",onclick:()=>{g.clearRect(0,0,W,H);hasInk=false;onChange()}},"Clear"),
+      h("button",{class:"small",type:"button",onclick:()=>file.click()},"Upload a photo of my signature"),file));
+  function value(){
+    if(!hasInk)return"";
+    const src=g.getImageData(0,0,c.width,c.height),d=src.data;
+    let minX=c.width,minY=c.height,maxX=-1,maxY=-1;
+    for(let i=0;i<d.length;i+=4){
+      if(d[i]>225&&d[i+1]>225&&d[i+2]>225)d[i+3]=0; // drop paper background from uploaded photos
+      if(d[i+3]>20){const px=(i/4)%c.width,py=Math.floor(i/4/c.width);if(px<minX)minX=px;if(px>maxX)maxX=px;if(py<minY)minY=py;if(py>maxY)maxY=py}
+    }
+    if(maxX<0)return"";
+    const tmp=document.createElement("canvas");tmp.width=c.width;tmp.height=c.height;tmp.getContext("2d").putImageData(src,0,0);
+    const bw=maxX-minX+1,bh=maxY-minY+1,s=Math.min(1,500/bw,170/bh);
+    const out=document.createElement("canvas");out.width=Math.ceil(bw*s);out.height=Math.ceil(bh*s);
+    out.getContext("2d").drawImage(tmp,minX,minY,bw,bh,0,0,out.width,out.height);
+    return out.toDataURL("image/png");
+  }
+  return{el,value};
+}
+
+/* ---------- tenant account card (used by tenants and by the owner's preview) ---------- */
+function AccountCard(rec){
+  const current=Ledger.paidFor(rec,NOW);
+  const latestPaid=Object.keys(rec.paid||{}).sort().pop();
+  const top=latestPaid&&latestPaid>NOW?latestPaid:NOW;
+  const months=Month.range(rec.since||NOW,top).reverse().slice(0,18);
+  const due=Ledger.dueMonths(rec);
+  return h("div",{class:"account"},
+    h("div",{class:"head"},h("span",{class:"lbl"},state.settings.market||"Shop"),h("h2",{},rec.shop),
+      h("p",{class:"sub"},rec.tenant+" · Monthly rent ",h("span",{class:"mono"},money(rec.rent)))),
+    h("div",{class:"status "+(current?"ok":"due")},
+      h("span",{class:"lbl",style:"color:inherit"},Month.label(NOW)),
+      h("strong",{},current?"✓ Rent paid":"Rent not paid yet"),
+      current?h("span",{},money(current.amount)+" · "+current.method+" · "+prettyDate(current.date))
+             :h("span",{},due.length>1?due.length+" months outstanding · "+money(due.length*rec.rent)+" in total":money(rec.rent)+" due"),
+      current?h("button",{class:"small",type:"button",onclick:()=>openReceipt(rec,NOW)},"View receipt"):null),
+    h("ul",{class:"hist","aria-label":"Payment history"},months.map(k=>{
+      const p=Ledger.paidFor(rec,k);
+      return h("li",{},h("span",{},Month.label(k)),
+        p?h("span",{class:"row",style:"gap:6px"},h("span",{class:"pill ok"},"✓ Paid "+money(p.amount)),h("button",{class:"small",type:"button",onclick:()=>openReceipt(rec,k)},"Receipt"))
+         :h("span",{class:"pill "+(k>NOW?"idle":"due")},k>NOW?"Not due yet":"Unpaid"));
+    })));
+}
+function PayPanel(rec){
+  const st=state.settings, due=Ledger.dueMonths(rec), amount=due.length?due.length*rec.rent:rec.rent;
+  const accounts=[["JazzCash",st.jazzcash],["Easypaisa",st.easypaisa],[st.bank||"Bank account",st.iban]].filter(a=>a[1]);
+  return h("div",{class:"panel"},
+    h("div",{class:"row spread"},h("h2",{},"Pay rent online"),h("span",{class:"mono"},money(amount))),
+    accounts.length?h("ol",{class:"steps"},
+        h("li",{},"Open your JazzCash, Easypaisa or banking app."),
+        h("li",{},"Send "+money(amount)+" to one of the accounts below."),
+        h("li",{},st.whatsapp?"Send the payment screenshot or transaction ID on WhatsApp.":"Keep the transaction ID for your records."),
+        h("li",{},"Your landlord confirms it and your receipt appears here."))
+      :h("p",{class:"sub"},"Your landlord hasn't added payment accounts yet."),
+    accounts.map(([name,num])=>h("div",{class:"acct"},
+      h("div",{},h("div",{class:"lbl"},name),h("div",{class:"mono"},num),st.title?h("div",{class:"meta"},st.title):null),
+      h("button",{class:"small",type:"button",onclick:()=>copyText(num,name+" number copied")},"Copy"))),
+    st.whatsapp?h("div",{class:"acct"},h("div",{},h("div",{class:"lbl"},"WhatsApp for payment proof"),h("div",{class:"mono"},st.whatsapp)),
+      h("button",{class:"small",type:"button",onclick:()=>copyText(st.whatsapp,"WhatsApp number copied")},"Copy")):null);
+}
+
+/* =========================================================
+   6. Owner screen
+   ========================================================= */
+const OwnerScreen={
+  els:{},
+  mount(){
+    const E=this.els;
+    E.tabLedger=h("button",{role:"tab",type:"button",onclick:()=>{state.tab="ledger";render()}},"Ledger");
+    E.tabMonths=h("button",{role:"tab",type:"button",onclick:()=>{state.tab="months";render()}},"Months");
+    E.tabSettings=h("button",{role:"tab",type:"button",onclick:()=>{state.tab="settings";render()}},"Payment settings");
+    E.monthsView=h("div",{class:"stack"});
+    E.monthLabel=h("b",{});
+    E.search=h("input",{type:"search",id:"search",placeholder:"Search shop or tenant","aria-label":"Search shops",oninput:e=>{state.query=e.target.value;render()}});
+    E.seg=h("div",{class:"seg",role:"group","aria-label":"Filter"},[["all","All"],["due","Unpaid"],["paid","Paid"]].map(([v,l])=>h("button",{type:"button","data-v":v,onclick:()=>{state.filter=v;render()}},l)));
+    E.summary=h("div",{class:"summary"});
+    E.list=h("div",{class:"ledger"});
+    E.ledgerView=h("div",{class:"stack"},
+      h("div",{class:"toolbar"},
+        h("div",{class:"monthnav"},
+          h("button",{class:"small",type:"button","aria-label":"Previous month",onclick:()=>{state.month=Month.shift(state.month,-1);render()}},"‹"),
+          E.monthLabel,
+          h("button",{class:"small",type:"button","aria-label":"Next month",onclick:()=>{state.month=Month.shift(state.month,1);render()}},"›"),
+          h("button",{class:"small ghost",type:"button",onclick:()=>{state.month=NOW;render()}},"This month")),
+        h("div",{class:"row"},
+          state.downloads?h("button",{class:"small",type:"button",onclick:exportCsv},"Export CSV"):null,
+          h("button",{class:"primary",type:"button",onclick:()=>openShopForm()},"+ Add shop"))),
+      E.summary,
+      h("div",{class:"filters"},E.search,E.seg),
+      E.list,
+      h("p",{class:"note"},"Give each tenant this page's link plus their shop code and PIN (use \"Copy login\"). When a shop becomes vacant, delete it and that tenant's login stops working."));
+    E.settingsView=h("div",{});
+    return h("div",{class:"stack"},h("div",{class:"tabs",role:"tablist"},E.tabLedger,E.tabMonths,E.tabSettings),E.ledgerView,E.monthsView,E.settingsView);
+  },
+  update(){
+    const E=this.els, t=state.tab;
+    for(const[k,tab,view]of[["ledger",E.tabLedger,E.ledgerView],["months",E.tabMonths,E.monthsView],["settings",E.tabSettings,E.settingsView]]){
+      tab.setAttribute("aria-selected",String(t===k));view.hidden=t!==k;
+    }
+    if(t==="settings"){if(!state.settingsDirty)E.settingsView.replaceChildren(SettingsForm());return}
+    if(t==="months"){E.monthsView.replaceChildren(...MonthsView());return}
+    E.monthLabel.textContent=Month.label(state.month);
+    E.seg.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===state.filter)));
+    E.summary.replaceChildren(...SummaryBlock());
+    E.list.replaceChildren(...ShopRows());
+  },
+};
+
+function SummaryBlock(){
+  const s=Ledger.summary(state.shops,state.month);
+  const pct=s.expected?Math.round(s.collected/s.expected*100):0;
+  return[
+    h("div",{class:"figs"},
+      h("div",{},h("span",{class:"lbl"},"Expected"),h("span",{class:"big"},money(s.expected))),
+      h("div",{},h("span",{class:"lbl"},"Collected"),h("span",{class:"big ok"},money(s.collected))),
+      h("div",{},h("span",{class:"lbl"},"Outstanding"),h("span",{class:"big due"},money(s.outstanding))),
+      h("div",{},h("span",{class:"lbl"},"All arrears to date"),h("span",{class:"big "+(s.arrears?"bad":"")},money(s.arrears)))),
+    h("div",{class:"bar",role:"progressbar","aria-valuemin":"0","aria-valuemax":"100","aria-valuenow":String(pct),"aria-label":"Collected this month"},h("span",{style:"width:"+pct+"%"})),
+    h("p",{class:"note"},s.paidCount+" of "+s.activeCount+" shops paid for "+Month.label(state.month)+" · "+pct+"% collected"),
+  ];
+}
+
+function ShopRows(){
+  const m=state.month, q=state.query.trim().toLowerCase();
+  if(!state.shops.length)return[h("div",{class:"empty"},h("h3",{},"No shops yet"),
+    h("p",{class:"sub"},"Add your first shop with its name, tenant and monthly rent. Each shop gets a login code and PIN for the tenant."),
+    h("button",{class:"primary",type:"button",onclick:()=>openShopForm()},"+ Add your first shop"))];
+  const rows=state.shops
+    .filter(s=>!q||(s.name+" "+s.tenant).toLowerCase().includes(q))
+    .filter(s=>state.filter==="all"||(state.filter==="paid")===!!Ledger.paidFor(s,m))
+    .sort((a,b)=>String(a.name).localeCompare(String(b.name),undefined,{numeric:true}));
+  if(!rows.length)return[h("div",{class:"empty"},h("p",{class:"sub"},"No shops match this search or filter."))];
+  return rows.map(s=>{
+    const p=Ledger.paidFor(s,m), active=Ledger.isActive(s,m), dueCount=Ledger.dueMonths(s).length;
+    return h("div",{class:"shop"+(p?" paid":active?"":" idle")},
+      h("div",{class:"who"},h("h3",{},s.name),
+        h("div",{class:"meta"},s.tenant,s.phone?" · "+s.phone:""),
+        h("div",{class:"meta"},"Code ",h("span",{class:"code"},s.code)," PIN ",h("span",{class:"code"},s.pin||"—"))),
+      h("div",{class:"state"},h("span",{class:"mono"},money(s.rent)+" / month"),
+        !active?h("span",{class:"pill idle"},"Starts "+Month.short(s.since))
+          :p?h("span",{class:"pill ok"},"✓ Paid · "+p.method+" · "+prettyDate(p.date))
+          :h("span",{class:"pill due"},"Unpaid"),
+        dueCount>1?h("span",{class:"pill bad"},dueCount+" months owed · "+money(Ledger.arrears(s))):null),
+      h("div",{class:"acts"},
+        p?h("button",{class:"small",type:"button",onclick:()=>openReceipt(Ledger.publicView(s),m)},"Receipt")
+         :active?h("button",{class:"small primary",type:"button",onclick:()=>openPaymentForm(s)},"Record payment"):null,
+        p?h("button",{class:"small",type:"button",onclick:()=>undoPayment(s,m)},"Undo"):null,
+        h("button",{class:"small",type:"button",onclick:()=>copyLogin(s)},"Copy login"),
+        h("button",{class:"small",type:"button",onclick:()=>openSheet("Tenant's view",()=>h("div",{class:"stack"},h("p",{class:"note"},"This is exactly what "+s.tenant+" sees after logging in."),AccountCard(Ledger.publicView(s)),PayPanel(Ledger.publicView(s))))},"Preview"),
+        h("button",{class:"small ghost",type:"button",onclick:()=>openShopForm(s)},"Edit"),
+        confirmButton("Vacant · Delete",async()=>{try{await Data.deleteShop(s);toast(s.name+" deleted")}catch{toast("Couldn't delete. Please try again.")}})));
+  });
+}
+
+/* ---------- months report: one row per month, plus a shop × month grid ---------- */
+function MonthsView(){
+  const shops=[...state.shops].sort((a,b)=>String(a.name).localeCompare(String(b.name),undefined,{numeric:true}));
+  if(!shops.length)return[h("div",{class:"ledger"},h("div",{class:"empty"},h("h3",{},"No months to show yet"),h("p",{class:"sub"},"Add a shop on the Ledger tab and its months will appear here.")))];
+  const first=shops.map(s=>s.since||NOW).sort()[0];
+  const lastPaid=shops.flatMap(s=>Object.keys(s.paid||{})).sort().pop();
+  const last=lastPaid&&lastPaid>NOW?lastPaid:NOW;
+  const months=Month.range(first,last).reverse().slice(0,24);
+  const goTo=k=>{state.month=k;state.tab="ledger";render()};
+  let totExp=0,totCol=0;
+  const rows=months.map(k=>{
+    const s=Ledger.summary(shops,k);totExp+=s.expected;totCol+=s.collected;
+    const pct=s.expected?Math.round(s.collected/s.expected*100):0;
+    const tr=h("tr",{class:"clickable"+(k===NOW?" current":""),tabindex:"0",title:"Open "+Month.label(k)+" in the ledger"},
+      h("td",{},Month.label(k),k===NOW?" · now":k>NOW?" · advance":""),
+      h("td",{class:"num"},s.paidCount+" / "+s.activeCount),
+      h("td",{class:"num"},money(s.expected)),
+      h("td",{class:"num",style:"color:var(--ok)"},money(s.collected)),
+      h("td",{class:"num",style:s.outstanding&&k<=NOW?"color:var(--due)":""},money(s.outstanding)),
+      h("td",{},h("span",{class:"minibar","aria-hidden":"true"},h("span",{style:"width:"+pct+"%"}))," ",h("span",{class:"mono"},pct+"%")));
+    tr.addEventListener("click",()=>goTo(k));
+    tr.addEventListener("keydown",e=>{if(e.key==="Enter")goTo(k)});
+    return tr;
+  });
+  const summaryTable=h("div",{class:"tablewrap"},h("table",{},
+    h("thead",{},h("tr",{},h("th",{},"Month"),h("th",{class:"num"},"Shops paid"),h("th",{class:"num"},"Expected"),h("th",{class:"num"},"Collected"),h("th",{class:"num"},"Outstanding"),h("th",{},"Progress"))),
+    h("tbody",{},rows),
+    h("tfoot",{},h("tr",{},h("th",{},"Total"),h("th",{}),h("th",{class:"num"},money(totExp)),h("th",{class:"num"},money(totCol)),h("th",{class:"num"},money(Math.max(0,totExp-totCol))),h("th",{})))));
+  const gridMonths=months.slice(0,12).reverse();
+  const grid=h("div",{class:"tablewrap"},h("table",{class:"grid"},
+    h("thead",{},h("tr",{},h("th",{class:"sticky"},"Shop"),gridMonths.map(k=>h("th",{style:"text-align:center"},Month.short(k))))),
+    h("tbody",{},shops.map(s=>h("tr",{},
+      h("td",{class:"sticky",title:s.name+" · "+s.tenant},s.name),
+      gridMonths.map(k=>{
+        const p=Ledger.paidFor(s,k), active=Ledger.isActive(s,k);
+        if(!active)return h("td",{class:"cell"},h("span",{class:"dot idle","aria-label":"Not rented"},"·"));
+        if(p)return h("td",{class:"cell"},h("button",{class:"dot ok",type:"button","aria-label":s.name+" "+Month.label(k)+": paid, open receipt",onclick:()=>openReceipt(Ledger.publicView(s),k)},"✓"));
+        if(k>NOW)return h("td",{class:"cell"},h("span",{class:"dot idle","aria-label":"Not due yet"},"–"));
+        return h("td",{class:"cell"},h("button",{class:"dot due",type:"button","aria-label":s.name+" "+Month.label(k)+": unpaid, record payment",onclick:()=>{state.month=k;openPaymentForm(s)}},"✗"));
+      }))))));
+  return[
+    h("div",{class:"row spread"},h("h2",{},"Month by month"),h("p",{class:"note"},"Tap a month to open it in the ledger.")),
+    summaryTable,
+    h("div",{class:"row spread"},h("h2",{},"Shop × month grid"),
+      h("div",{class:"legend"},h("span",{},h("span",{class:"dot ok"},"✓"),"Paid (tap for receipt)"),h("span",{},h("span",{class:"dot due"},"✗"),"Unpaid (tap to record)"),h("span",{},h("span",{class:"dot idle"},"·"),"Not rented"))),
+    grid,
+  ];
+}
+
+function copyLogin(s){
+  const st=state.settings;
+  copyText(["Rent account for "+s.name+(st.market?" ("+st.market+")":""),"Open the link I shared and log in with:","Shop code: "+s.code,"PIN: "+s.pin].join("\n"),"Login details copied. Paste them into WhatsApp.");
+}
+
+function openShopForm(shop){
+  openSheet(shop?"Edit shop":"Add a shop",close=>{
+    const f=h("form",{class:"stack"},
+      field("Shop name or number",h("input",{id:"f-name",required:true,value:shop?.name||"",placeholder:"Shop 4, ground floor"})),
+      field("Tenant name",h("input",{id:"f-tenant",required:true,value:shop?.tenant||"",placeholder:"Tenant's full name"})),
+      h("div",{class:"grid2"},
+        field("Phone",h("input",{id:"f-phone",inputmode:"tel",value:shop?.phone||"",placeholder:"03xx xxxxxxx"}),"Only you can see this."),
+        field("Monthly rent (Rs)",h("input",{id:"f-rent",required:true,type:"number",min:"0",step:"1",inputmode:"numeric",value:shop?.rent??""}))),
+      h("div",{class:"grid2"},
+        field("Rent starts from",h("input",{id:"f-since",type:"month",required:true,value:shop?.since||NOW})),
+        field("Tenant PIN (4 digits)",h("input",{id:"f-pin",class:"mono",required:true,inputmode:"numeric",pattern:"[0-9]{4}",maxlength:"4",value:shop?.pin||newPin()}),"Changing it logs the tenant out.")),
+      shop?h("p",{class:"note"},"Login code: ",h("span",{class:"code"},shop.code)):h("p",{class:"note"},"A login code is created when you save."),
+      h("div",{},h("button",{class:"primary",type:"submit"},shop?"Save changes":"Add shop")));
+    f.addEventListener("submit",async e=>{
+      e.preventDefault();
+      const v=id=>f.querySelector(id).value.trim();
+      const next={...(shop||{}),name:v("#f-name"),tenant:v("#f-tenant"),phone:v("#f-phone"),rent:Number(v("#f-rent"))||0,since:v("#f-since")||NOW,pin:v("#f-pin"),code:shop?.code||newCode(),paid:shop?.paid||{}};
+      try{await Data.saveShop(shop?.id||"s"+Date.now().toString(36),next,shop?.key);toast(shop?"Changes saved":"Shop added · code "+next.code+", PIN "+next.pin);close()}
+      catch(err){toast("Couldn't save ("+(err?.code||"error")+"). Please try again.")}
+    });
+    return f;
+  });
+}
+
+function openPaymentForm(shop){
+  openSheet("Record payment",close=>{
+    const paid=shop.paid||{};
+    const owed=Ledger.dueMonths(shop);
+    const options=Month.range([shop.since||NOW,Month.shift(state.month,-11)].sort().pop(),Month.shift(state.month,6));
+    const selected=new Set(paid[state.month]?[]:[state.month]);
+    const amountIn=h("input",{id:"p-amt",type:"number",min:"0",step:"1",inputmode:"numeric",required:true,value:shop.rent});
+    const totalEl=h("div",{class:"total"});
+    const refresh=()=>{totalEl.replaceChildren(h("span",{},selected.size+" month"+(selected.size===1?"":"s")+" × "+money(amountIn.value)),h("span",{class:"mono"},money(selected.size*(Number(amountIn.value)||0))))};
+    amountIn.addEventListener("input",refresh);
+    const chips=options.map(k=>{
+      const done=!!paid[k];
+      const tag=done?"✓ paid":k===NOW?"this month":k>NOW?"advance":"owed";
+      const b=h("button",{type:"button",class:"mchip","aria-pressed":String(selected.has(k)),disabled:done},Month.short(k),h("small",{},tag));
+      b.addEventListener("click",()=>{selected.has(k)?selected.delete(k):selected.add(k);b.setAttribute("aria-pressed",String(selected.has(k)));refresh()});
+      return b;
+    });
+    const f=h("form",{class:"stack"},
+      h("p",{class:"sub"},shop.name+" · "+shop.tenant+(owed.length?" · "+owed.length+" month"+(owed.length===1?"":"s")+" owed":"")),
+      h("div",{class:"row spread"},h("span",{class:"lbl"},"Which months is this for?"),
+        owed.length>1?h("button",{class:"small",type:"button",onclick:()=>{owed.forEach(k=>selected.add(k));chips.forEach((b,i)=>b.setAttribute("aria-pressed",String(selected.has(options[i]))));refresh()}},"Select all owed"):null),
+      h("div",{class:"months",role:"group","aria-label":"Months"},chips),
+      h("div",{class:"grid2"},
+        field("Amount per month (Rs)",amountIn),
+        field("Date received",h("input",{id:"p-date",type:"date",required:true,value:todayISO()}))),
+      field("Payment method",h("select",{id:"p-method"},["Cash","JazzCash","Easypaisa","Bank transfer"].map(x=>h("option",{},x)))),
+      field("Transaction ID",h("input",{id:"p-txn",placeholder:"Wallet or bank reference"}),"Optional. Shown on the receipt."),
+      totalEl,
+      h("button",{class:"primary",type:"submit"},"Save payment"));
+    refresh();
+    f.addEventListener("submit",async e=>{
+      e.preventDefault();
+      if(!selected.size){toast("Choose at least one month.");return}
+      const entry={amount:Number(amountIn.value)||0,date:f.querySelector("#p-date").value,method:f.querySelector("#p-method").value,txn:f.querySelector("#p-txn").value.trim()};
+      const nextPaid={...paid};
+      for(const k of selected)nextPaid[k]={...entry,no:receiptNo(shop.code,k)};
+      try{await Data.saveShop(shop.id,{...shop,paid:nextPaid});toast("Payment saved for "+selected.size+" month"+(selected.size===1?"":"s")+". Receipts are ready.");close()}
+      catch{toast("Couldn't save. Please try again.")}
+    });
+    return f;
+  });
+}
+
+async function undoPayment(shop,m){
+  const paid={...(shop.paid||{})};delete paid[m];
+  try{await Data.saveShop(shop.id,{...shop,paid});toast(Month.label(m)+" marked unpaid")}catch{toast("Couldn't save. Please try again.")}
+}
+
+async function exportCsv(){
+  const m=state.month, esc=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+  const lines=[["Shop","Tenant","Phone","Rent","Status","Amount","Date","Method","Transaction ID","Receipt no."].map(esc).join(",")];
+  for(const s of state.shops){const p=Ledger.paidFor(s,m);lines.push([s.name,s.tenant,s.phone,s.rent,p?"Paid":"Unpaid",p?.amount,p?.date,p?.method,p?.txn,p?.no].map(esc).join(","))}
+  try{await state.downloads.save({filename:"Rent-"+m+".csv",data:lines.join("\n")});toast("CSV saved")}
+  catch(e){toast(e?.code==="declined"?"Download cancelled":"Couldn't download the CSV.")}
+}
+
+function SettingsForm(){
+  const v=state.settings;
+  const input=(id,ph,mode)=>h("input",{id:"st-"+id,value:v[id]||"",placeholder:ph,inputmode:mode||false});
+  const pad=SignaturePad(v.signature,()=>{state.settingsDirty=true});
+  const f=h("form",{class:"panel",oninput:()=>{state.settingsDirty=true}},
+    h("h2",{},"Payment settings"),
+    h("p",{class:"sub"},"Tenants see these details after logging in so they can send rent from their phone. The market name and your name also appear on receipts."),
+    h("div",{class:"grid2"},field("Market or plaza name",input("market","Al-Noor Market")),field("Your name (on receipts)",input("owner","Your name"))),
+    h("div",{class:"grid2"},field("JazzCash number",input("jazzcash","03xx xxxxxxx","tel")),field("Easypaisa number",input("easypaisa","03xx xxxxxxx","tel"))),
+    h("div",{class:"grid2"},field("Bank name",input("bank","Meezan Bank")),field("Account title",input("title","Account holder's name"))),
+    field("Account number or IBAN",input("iban","PK00XXXX0000000000000000")),
+    field("WhatsApp number",input("whatsapp","03xx xxxxxxx","tel"),"Tenants send payment proof here."),
+    h("div",{class:"stack",style:"gap:6px"},
+      h("h3",{},"Your signature"),
+      h("p",{class:"note"},"Sign in the box with your finger or mouse, or upload a photo of your signature on white paper. It is printed on every receipt."),
+      pad.el),
+    h("div",{class:"row"},h("button",{class:"primary",type:"submit"},"Save settings"),
+      h("button",{class:"small",type:"button",onclick:previewReceipt},"Preview a receipt")));
+  f.addEventListener("submit",async e=>{
+    e.preventDefault();
+    const d={};for(const k of["market","owner","jazzcash","easypaisa","bank","title","iban","whatsapp"])d[k]=f.querySelector("#st-"+k).value.trim();
+    d.signature=pad.value();
+    if(d.signature.length>200000){toast("That signature image is too detailed. Please draw it instead.");return}
+    try{await Data.saveSettings(d);state.settingsDirty=false;toast("Settings saved")}catch{toast("Couldn't save. Please try again.")}
+  });
+  /** Shows a sample receipt with what is in the form right now, saved or not. */
+  function previewReceipt(){
+    const draft={...state.settings,signature:pad.value()};
+    for(const k of["market","owner","whatsapp"])draft[k]=f.querySelector("#st-"+k).value.trim();
+    const m=NOW,sample={shop:"Shop 4 (sample)",tenant:"Sample Tenant",rent:25000,code:"SAMPLE",paid:{[m]:{amount:25000,date:todayISO(),method:"JazzCash",txn:"0000000000",no:"SAMPLE-"+m.replace("-","")}}};
+    const saved=state.settings;state.settings=draft;openReceipt(sample,m);state.settings=saved;
+  }
+  return f;
+}
+
+/* =========================================================
+   7. Tenant screens
+   ========================================================= */
+function LoginScreen(){
+  const hash=(location.hash||"").slice(1).toUpperCase();
+  const err=h("p",{class:"err",role:"alert"},state.tenant.error);err.hidden=!state.tenant.error;
+  const f=h("form",{class:"panel",style:"max-width:440px"},
+    h("h2",{},"Tenant login"),
+    h("p",{class:"sub"},"Enter the shop code and 4-digit PIN your landlord gave you."),
+    field("Shop code",h("input",{id:"t-code",class:"mono",maxlength:"6",autocapitalize:"characters",autocomplete:"username",placeholder:"ABC123",required:true,value:/^[A-Z0-9]{6}$/.test(hash)?hash:""})),
+    field("PIN",h("input",{id:"t-pin",class:"mono",type:"password",inputmode:"numeric",maxlength:"4",autocomplete:"current-password",placeholder:"••••",required:true})),
+    err,
+    h("div",{},h("button",{class:"primary",type:"submit"},"Log in")));
+  f.addEventListener("submit",async e=>{
+    e.preventDefault();
+    const code=f.querySelector("#t-code").value.trim().toUpperCase(), pin=f.querySelector("#t-pin").value.trim();
+    if(!/^[A-Z0-9]{6}$/.test(code)||!/^[0-9]{4}$/.test(pin)){err.textContent="The shop code has 6 characters and the PIN has 4 digits.";err.hidden=false;return}
+    openTenant(await recordKey(code,pin));
+  });
+  return f;
+}
+function TenantScreen(rec){
+  if(rec===undefined)return h("div",{class:"panel"},h("p",{class:"sub"},"Logging in…"));
+  return h("div",{class:"stack"},AccountCard(rec),PayPanel(rec));
+}
+function openTenant(key){
+  const t=state.tenant;
+  t.unsub?.();
+  Object.assign(t,{key,record:undefined,error:""});
+  t.unsub=Data.watchRecord(key,rec=>{
+    if(rec){t.record=rec;local.set(LOGIN_KEY,key)}
+    else{logoutTenant("That shop code and PIN don't match. Check them with your landlord.")}
+    render();
+  });
+  render();
+}
+function logoutTenant(error=""){
+  const t=state.tenant;t.unsub?.();
+  Object.assign(t,{key:null,record:undefined,unsub:null,error});
+  local.set(LOGIN_KEY,null);mounted=null;render();
+}
+
+/* =========================================================
+   8. Landlord login (Firebase email + password)
+   ========================================================= */
+function LandlordLoginScreen(){
+  const err=h("p",{class:"err",role:"alert",hidden:true});
+  const show=m=>{err.textContent=m;err.hidden=false};
+  const email=h("input",{id:"l-email",type:"email",autocomplete:"username",required:true,placeholder:"you@example.com"});
+  const pass=h("input",{id:"l-pass",type:"password",autocomplete:"current-password",required:true,placeholder:"Your password"});
+  const f=h("form",{class:"panel",style:"max-width:440px"},
+    h("h2",{},"Landlord login"),
+    h("p",{class:"sub"},"Use the email and password you created in Firebase Authentication."),
+    field("Email",email),field("Password",pass),err,
+    h("div",{class:"row"},h("button",{class:"primary",type:"submit"},"Log in"),
+      h("button",{class:"textlink",type:"button",onclick:async()=>{
+        if(!email.value.trim()){show("Type your email first, then tap \"Forgot password\".");return}
+        try{await firebase.auth().sendPasswordResetEmail(email.value.trim());toast("Password reset email sent")}catch(e){show(authMessage(e))}
+      }},"Forgot password")),
+    h("p",{class:"note"},"Are you a tenant? ",h("a",{href:"#",class:"textlink"},"Go to tenant login")));
+  f.addEventListener("submit",async e=>{
+    e.preventDefault();err.hidden=true;
+    try{await firebase.auth().signInWithEmailAndPassword(email.value.trim(),pass.value);location.hash=""}
+    catch(e){show(authMessage(e))}
+  });
+  return f;
+}
+function authMessage(e){
+  const c=e&&e.code||"";
+  if(c.includes("invalid-credential")||c.includes("wrong-password")||c.includes("user-not-found"))return"Email or password is wrong.";
+  if(c.includes("too-many-requests"))return"Too many tries. Wait a few minutes and try again.";
+  if(c.includes("network"))return"No internet connection.";
+  return"Couldn't log in ("+c+").";
+}
+
+/* Browser download (replaces the claude.ai downloads capability) */
+const browserDownloads={
+  async save({filename,data}){
+    const blob=data instanceof Blob?data:new Blob([data],{type:filename.endsWith(".csv")?"text/csv;charset=utf-8":"application/octet-stream"});
+    const url=URL.createObjectURL(blob);
+    const a=h("a",{href:url,download:filename,hidden:true});
+    document.body.append(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    return{status:"saved"};
+  }
+};
+
+/* =========================================================
+   9. Boot
+   ========================================================= */
+(function boot(){
+  if(!window.firebase||FIREBASE_CONFIG.apiKey.startsWith("PASTE")){
+    $("#app").replaceChildren(h("div",{class:"panel"},h("h2",{},"Setup needed"),
+      h("p",{class:"sub"},"Open index.html, find FIREBASE_CONFIG near the top, and paste your Firebase project's settings. The README explains each step.")));
+    return;
+  }
+  firebase.initializeApp(FIREBASE_CONFIG);
+  Data.db=firebase.firestore();
+  state.downloads=browserDownloads;
+  let stopShops=null;
+
+  $("#logout").addEventListener("click",async()=>{
+    if(state.owner){await firebase.auth().signOut();toast("Logged out")}
+    else{logoutTenant();toast("Logged out")}
+  });
+  window.addEventListener("hashchange",()=>{mounted=null;render()});
+
+  Data.watchSettings(s=>{state.settings=s;render()});
+  firebase.auth().onAuthStateChanged(user=>{
+    stopShops?.();stopShops=null;
+    state.owner=!!user;state.shops=[];
+    if(user)stopShops=Data.watchShops(list=>{state.shops=list;render()});
+    mounted=null;state.ready=true;render();
+  });
+  const saved=local.get(LOGIN_KEY);if(saved)openTenant(saved);
+})();
+</script>
 </body>
 </html>
