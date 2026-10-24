@@ -1,1127 +1,629 @@
-<title>Rent Link Market</title>
+<title>Market Kiraya Khata</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-/* Layout: white header with marigold rule; landlord tabs (Rent Desk / Months / Invoices / Settings), tenant account, public receipt check; ledgers, month strip, invoice overlay */
+/* Layout: ledger app — sticky header, owner tabs (Dukanein / Nayi Dukaan / Settings), shop detail as a khata page; tenant view = code + PIN lookup + lifetime statement */
 :root{
-  --paper:#ffffff; --card:#ffffff; --soft:#f6f7f6; --ink:#000000; --muted:#333333;
-  --line:#e2e6e3; --marigold:#e39a12; --marigold-ink:#2a1a00; --tint:#f3f3f3;
-  --ok:#000000; --ok-soft:#f1f1f1; --warn:#d0021b; --warn-soft:#fdeaea; --danger:#d0021b; --danger-soft:#fdeaea;
-  --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
-  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --bg:#FFFFFF; --surface:#FFFFFF; --sunk:#F2F6F3; --ink:#15221C; --muted:#5B6B63; --line:#CCD7D0;
+  --accent:#0D6B4E; --accent-ink:#FFFFFF; --accent-soft:#D5EBE1;
+  --due:#B3261E; --due-soft:#F8E1DE; --ok:#1F7A3F; --ok-soft:#DDF1E2; --warn:#8A5A00; --warn-soft:#F7EBCF;
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
   --r:10px; color-scheme:light;
 }
+.paybox{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.paybox b{font-family:var(--f-mono);font-size:15px;overflow-wrap:anywhere}
+.pm-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end}
+@media (max-width:640px){.pm-row{grid-template-columns:1fr}}
+
 *{box-sizing:border-box}
-body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:#fff}
-.wrap{max-width:1140px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-button,input,select,textarea{font:inherit;color:inherit}
-:focus-visible{outline:3px solid var(--marigold);outline-offset:2px}
-header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 3px 0 var(--marigold)}
-header.top .wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-block:10px}
-.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto;flex-wrap:wrap}
-.brand b{font-family:var(--f-display);font-weight:900;font-size:30px;letter-spacing:.02em;text-transform:uppercase;line-height:1}
-.brand b span{color:var(--marigold)}
-.brand small{font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
-nav.tabs{display:flex;gap:4px;flex-wrap:wrap}
-nav.tabs button{background:transparent;border:0;padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:600;font-size:14px}
-nav.tabs button:hover{background:var(--tint)}
-nav.tabs button[aria-current="page"]{background:var(--marigold);color:var(--marigold-ink)}
-main{padding-block:24px 64px}
-h1,h2,h3{text-wrap:balance;margin:0}
-.display{font-family:var(--f-display);font-weight:800;text-transform:uppercase;letter-spacing:.01em;line-height:1}
-.h1{font-size:clamp(36px,6vw,54px)} .h2{font-size:26px} .h3{font-size:20px}
-.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
-.muted{color:var(--muted)} .hint{font-size:12px;color:var(--muted);font-weight:400}
-.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:2px solid var(--ink);background:var(--card);color:var(--ink);border-radius:var(--r);padding:9px 16px;font-weight:600;cursor:pointer;text-decoration:none;font-size:14px;min-height:42px}
-.btn:hover{background:var(--tint)}
-.btn.primary{background:var(--ink);color:#fff} .btn.primary:hover{opacity:.9}
-.btn.gold{background:var(--marigold);border-color:var(--marigold);color:var(--marigold-ink)}
-.btn.danger{border-color:var(--danger);color:var(--danger)} .btn.danger.solid{background:var(--danger);color:#fff}
-.btn.sm{padding:5px 10px;min-height:32px;font-size:13px;border-width:1.5px}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.between{justify-content:space-between}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
-.stack{display:grid;gap:16px}
-.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:20px;align-items:start}
-@media (max-width:880px){.two{grid-template-columns:1fr}}
-.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.fgrid .full{grid-column:1/-1}
-@media (max-width:520px){.fgrid{grid-template-columns:1fr}}
-label.fld{display:grid;gap:4px;font-size:13px;font-weight:600}
-label.fld input,label.fld select,label.fld textarea{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:9px 11px;font-weight:400;font-size:15px;width:100%;min-width:0}
-label.fld textarea{min-height:70px;resize:vertical}
-label.fld input:focus,label.fld select:focus,label.fld textarea:focus{border-color:var(--ink);outline:none}
-fieldset{border:1px dashed var(--line);border-radius:8px;padding:12px;margin:0;display:grid;gap:12px}
-legend{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;padding:0 6px}
-.msg{padding:10px 14px;border-radius:8px;font-size:14px}
-.msg.err{background:var(--danger-soft);color:var(--danger)} .msg.ok{background:var(--ok-soft);color:var(--ok)} .msg.info{background:var(--tint)}
-.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
-.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)}
-.pill.bad{background:var(--danger-soft);color:var(--danger)} .pill.off{background:var(--line)}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px;min-width:0;display:grid;gap:2px}
-.stat b{display:block;font-family:var(--f-mono);font-size:24px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.stat span{font-size:13px;color:var(--muted)}
-.stat.alert{border-color:var(--danger)} .stat.alert b{color:var(--danger)}
-.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
-table{border-collapse:collapse;width:100%;font-size:14px}
-table.wide{min-width:820px}
-th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
-th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;background:var(--soft)}
-td.num,th.num{text-align:right}
-tfoot th{color:#000;font-size:12px}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;gap:12px;padding-block:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.mark{width:36px;height:36px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:18px;flex:none}
+.brand h1{font-family:var(--f-display);font-size:19px;margin:0;line-height:1.15;text-wrap:balance}
+.brand small{display:block;color:var(--muted);font-size:12.5px}
+nav.tabs{display:flex;flex-wrap:wrap;gap:4px;background:var(--sunk);padding:4px;border-radius:16px}
+nav.tabs button{border:0;background:transparent;color:var(--muted);font:600 13.5px var(--f-body);padding:7px 14px;border-radius:999px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+main{padding-block:22px 60px;display:flex;flex-direction:column;gap:20px}
+h2{font-family:var(--f-display);font-size:24px;margin:0;text-wrap:balance}
+h3{font-family:var(--f-display);font-size:17px;margin:0}
+.lbl{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.spread{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.stat{padding:14px 16px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line)}
+.stat b{display:block;font-family:var(--f-display);font-size:24px;font-variant-numeric:tabular-nums;margin-top:2px}
+.stat.due b{color:var(--due)}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600;color:var(--muted)}
+input,select,textarea{font:inherit;font-size:15px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%;min-width:0}
+textarea{min-height:64px;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{font:600 14px var(--f-body);border-radius:8px;padding:9px 15px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{background:var(--sunk)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn.danger{color:var(--due)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.code{font-family:var(--f-mono);font-weight:700;letter-spacing:.04em;background:var(--accent-soft);color:var(--accent);padding:2px 8px;border-radius:6px;font-size:13px;white-space:nowrap}
+.code.big{font-size:22px;padding:6px 14px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.pill.paid{background:var(--ok-soft);color:var(--ok)}
+.pill.part{background:var(--warn-soft);color:var(--warn)}
+.pill.due{background:var(--due-soft);color:var(--due)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;vertical-align:middle}
+th{font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--sunk)}
 tr:last-child td{border-bottom:0}
-tr.click{cursor:pointer} tr.click:hover td{background:var(--tint)}
-.months{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px}
-.mon{border-radius:8px;padding:8px 6px;text-align:center;border:1.5px solid var(--line);background:var(--card);display:grid;gap:2px}
-.mon b{font-size:12px;font-weight:700}
-.mon span{font-size:11px}
-.mon.ok{border-color:#000}
-.mon.part,.mon.due{background:var(--danger-soft);border-color:transparent;color:var(--danger)}
-.mon.cur{outline:2px solid var(--ink);outline-offset:1px}
-.slip{border:2px dashed var(--marigold);border-radius:var(--r);padding:16px;display:grid;gap:10px;background:#fffaf0}
-.creds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.cred{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:4px;justify-items:start}
-.cred b{font-family:var(--f-mono);font-size:26px;letter-spacing:.08em}
-.big-due{display:grid;gap:4px;padding:18px 20px;border-radius:var(--r);background:var(--danger-soft);color:var(--danger);border:1px solid var(--danger)}
-.big-due .amt{font-family:var(--f-mono);font-weight:700;font-size:clamp(32px,7vw,48px);line-height:1.1}
-.big-due .eyebrow{color:var(--danger)}
-.big-due.clear{background:#fff;color:#000;border-color:#000} .big-due.clear .eyebrow{color:#000}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:14px;margin:0}
-.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:600;min-width:0;overflow-wrap:anywhere}
-.empty{border:2px dashed var(--line);border-radius:var(--r);padding:32px 20px;text-align:center;display:grid;gap:10px;justify-items:center}
-.empty h3{font-family:var(--f-display);font-size:26px;text-transform:uppercase}
-.inline-confirm{background:var(--danger-soft);border-radius:8px;padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--danger)}
-.mlist tr.sel td{background:var(--soft);font-weight:700}
-.method-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) auto auto;gap:8px;align-items:end;padding:10px 0;border-bottom:1px solid var(--line)}
-@media (max-width:620px){.method-row{grid-template-columns:1fr 1fr}}
-.paybox{border:1.5px solid #000;border-radius:var(--r);padding:14px 16px;display:grid;gap:8px}
-.paybox .pm div{white-space:pre-wrap;font-family:var(--f-mono);font-size:13px}
-ol.steps{margin:0;padding-left:20px;display:grid;gap:6px}
-.proof-thumb{width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:zoom-in;background:var(--soft)}
-.approve-box{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%}
-@media (max-width:620px){.approve-box{grid-template-columns:1fr}}
-.claim-card{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}
-.claim-card:last-child{border-bottom:0}
-.newrcpt{border:2px solid #000;border-radius:var(--r);padding:12px 16px;display:grid;gap:8px;background:#fff}
-.code{font-family:var(--f-mono);font-weight:700;letter-spacing:.06em;white-space:nowrap}
-.verify-result{border:2px solid #000;border-radius:var(--r);padding:16px;display:grid;gap:8px}
-.verify-result.bad{border-color:var(--danger);color:var(--danger);background:var(--danger-soft)}
-.verify-result .big{font-family:var(--f-display);font-size:30px;font-weight:900;text-transform:uppercase;line-height:1}
-.overlay{position:fixed;inset:0;z-index:15;background:rgba(0,0,0,.45);overflow-y:auto;padding:calc(24px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
-.inv-actions{max-width:780px;margin:0 auto 10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.inv-actions .btn{background:#fff} .inv-actions .btn.primary{background:#000;color:#fff}
-.invoice{max-width:780px;margin:0 auto;background:#fff;color:#000;border-radius:6px;padding:clamp(20px,5vw,44px);display:grid;gap:22px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
-.inv-head{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;border-bottom:3px solid #000;padding-bottom:16px}
-.inv-head .mk{font-family:var(--f-display);font-weight:900;font-size:30px;text-transform:uppercase;line-height:1}
-.inv-head .doc{text-align:right;display:grid;gap:2px}
-.inv-head .doc b{font-family:var(--f-display);font-size:34px;font-weight:900;letter-spacing:.06em;line-height:1}
-.inv-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;font-size:14px}
-.inv-meta div{display:grid;gap:2px}
-.inv-lines{width:100%;border-collapse:collapse;font-size:14px}
-.inv-lines th{background:#000;color:#fff}
-.inv-lines td,.inv-lines th{padding:10px 12px;border-bottom:1px solid #ddd}
-.inv-lines .amt{text-align:right}
-.inv-total{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:3px solid #000;padding-top:14px}
-.inv-total .amt{font-family:var(--f-mono);font-weight:700;font-size:28px}
-.stamp{border:3px solid #000;font-family:var(--f-display);font-weight:900;font-size:24px;letter-spacing:.12em;padding:4px 14px;transform:rotate(-4deg);display:inline-block}
-.stamp.unpaid{border-color:var(--danger);color:var(--danger)}
-.inv-verify{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;border:2px dashed #000;border-radius:6px;padding:10px 14px}
-.inv-verify .code{font-size:20px}
-.inv-foot{font-size:12px;color:#333;display:grid;gap:6px;border-top:1px solid #ddd;padding-top:12px}
-.proof-view{max-width:780px;margin:0 auto;background:#fff;border-radius:6px;padding:12px;display:grid;gap:8px;justify-items:center}
-.proof-view img{max-width:100%;max-height:75vh;border-radius:4px}
-.foot{border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
-.foot .wrap{padding-block:16px}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:#000;color:#fff;padding:10px 18px;border-radius:999px;font-weight:600;font-size:14px;z-index:20;max-width:calc(100% - 32px)}
-.back{background:none;border:0;cursor:pointer;font-weight:600;padding:0;margin-bottom:12px}
-.filters{display:flex;gap:6px;flex-wrap:wrap}
-.chip{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13px;font-weight:500}
-.chip[aria-pressed="true"]{background:#000;color:#fff;border-color:#000}
-@media (prefers-reduced-motion:no-preference){.btn,.chip{transition:background .15s,border-color .15s}}
+td.num,th.num{text-align:right}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover{background:var(--sunk)}
+.muted{color:var(--muted)}
+.empty{padding:34px 18px;text-align:center;color:var(--muted)}
+.empty h3{color:var(--ink);margin-bottom:6px}
+.msg{padding:10px 13px;border-radius:8px;font-size:14px}
+.msg.err{background:var(--due-soft);color:var(--due)}
+.msg.ok{background:var(--ok-soft);color:var(--ok)}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 20px}
+.kv div{min-width:0}
+.kv span{display:block;font-weight:600;overflow-wrap:anywhere}
+.back{border:0;background:none;color:var(--accent);font:600 14px var(--f-body);cursor:pointer;padding:0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;z-index:30;max-width:calc(100% - 32px)}
+.modal-bg{position:fixed;inset:0;background:rgba(5,12,9,.55);z-index:20;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:calc(24px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.modal{background:var(--surface);border-radius:12px;max-width:640px;width:100%;padding:18px;display:flex;flex-direction:column;gap:14px}
+/* invoice */
+.inv{background:#fff;color:#16211c;border:1px solid #cfd8d2;border-radius:8px;padding:22px;font-family:var(--f-body)}
+.inv .ih{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;border-bottom:2px solid #0D6B4E;padding-bottom:12px}
+.inv h4{font-family:var(--f-display);font-size:22px;margin:0;color:#0D6B4E}
+.inv .t{font-family:var(--f-display);font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:#5b6b63;text-align:right}
+.inv table{min-width:0;margin-top:14px}
+.inv th{background:#eef2ef;color:#5b6b63}
+.inv td,.inv th{border-bottom:1px solid #dfe6e1;padding:8px 10px}
+.inv .tot td{font-weight:700;font-size:16px;border-top:2px solid #16211c}
+.inv .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px 16px;margin-top:14px;font-size:14px}
+.inv .meta b{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#5b6b63}
+.inv .stamp{margin-top:14px;display:inline-block;border:2px solid currentColor;padding:3px 12px;border-radius:6px;font-weight:700;letter-spacing:.08em;transform:rotate(-3deg)}
+.lookup{max-width:520px;margin:30px auto 0;text-align:center;display:flex;flex-direction:column;gap:14px}
+.lookup form{display:flex;gap:8px}
+.lookup input{font-family:var(--f-mono);font-size:18px;text-transform:uppercase;letter-spacing:.06em;text-align:center}
+@media (max-width:560px){.lookup form{flex-direction:column}nav.tabs{width:100%}nav.tabs button{flex:1}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
-<header class="top">
-  <div class="wrap">
-    <div class="brand"><b>Rent <span>Link</span> Market</b><small id="mkt">Shop rent management</small></div>
-    <nav class="tabs" id="tabs"></nav>
-  </div>
-</header>
-<main class="wrap" id="app"><p class="muted">Loading…</p></main>
-<div class="overlay" id="overlay" hidden></div>
-<footer class="foot"><div class="wrap row between"><span>Rent Link Market · Shop rent, invoices, receipts and accounts</span><span id="foot-date"></span></div></footer>
-<div class="toast" id="toast" hidden></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<header class="top"><div class="wrap">
+  <div class="brand"><div class="mark" id="markLetter">K</div><div style="min-width:0"><h1 id="mktName">Market Kiraya Khata</h1><small id="mktSub">Dukanon ka kiraya, ek jagah</small></div></div>
+  <nav class="tabs" id="tabs" hidden>
+    <button data-tab="shops" aria-selected="true">Dukanein</button>
+    <button data-tab="add" aria-selected="false">Nayi Dukaan</button>
+    <button data-tab="invoices" aria-selected="false">Invoices</button>
+    <button data-tab="settings" aria-selected="false">Settings</button>
+    <button data-tab="tenant" aria-selected="false">Karayadar View</button>
+  </nav>
+</div></header>
+
+<main class="wrap" id="app">
+  <div class="empty"><h3>Load ho raha hai…</h3><p>Market ka data aa raha hai.</p></div>
+</main>
 
 <script>
-(() => {
-const BRAND = "Rent Link Market";
-const OLD_BRANDS = ["رینٹ لنک مارکیٹ"];
-const DEFAULT_SETTINGS = {marketName:BRAND, landlord:"", landlordPhone:"", dueDay:5,
-  methods:[{name:"Cash",details:"Pay at the market office",on:true},{name:"Bank transfer",details:"",on:true},{name:"JazzCash",details:"",on:true},{name:"Easypaisa",details:"",on:true},{name:"Cheque",details:"",on:false}]};
-const FLOORS = ["Ground floor","Basement","1st floor","2nd floor","3rd floor"];
-const REASONS = ["Monthly rent","Electricity bill","Water / gas bill","Repair / maintenance","Security deposit","Fine","Other"];
-const RENT = REASONS[0];
-const RENT_ALIASES = [RENT, "ماہانہ کرایہ"];
-const SESSION_KEY = "rlm-tenant";
-const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+(function(){
+const $=s=>document.querySelector(s);
+const app=$('#app');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rs=n=>'Rs. '+(Math.round(Number(n)||0)).toLocaleString('en-PK');
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const monthLabel=m=>{if(!m)return'';const[y,mm]=m.split('-');return MONTHS[+mm-1]+' '+y};
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const thisMonth=()=>today().slice(0,7);
+const norm=s=>String(s||'').trim().toUpperCase().replace(/\s+/g,'');
+const ALPH='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const rnd=n=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n};
+function genCode(){let s='';for(let i=0;i<6;i++)s+=ALPH[rnd(ALPH.length)];return 'MK-'+s}
+function genPin(){return String(1000+rnd(9000))}
+const uid=()=>Date.now().toString(36)+rnd(1e6).toString(36);
 
-const S = {
-  db:null, isOwner:false, ready:false, dbMissing:false, downloads:null,
-  units:[], pins:{}, counter:0, salt:"", view:"login", settings:JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), draft:null, selMonth:null,
-  openUnit:null, filter:"all", invoice:null, proofView:null, proofCache:{},
-  session:null, myUnit:null, myUnsub:null, verify:null,
-  confirm:null, lastCreated:null, editing:false, msg:null, busy:false
-};
-const $app = document.getElementById("app");
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const num = n => Math.round(Number(n)||0).toLocaleString("en-PK");
-const rs = n => `<span class="mono">Rs ${num(n)}</span>`;
-const rsT = n => `Rs ${num(n)}`;
-const store = { get(k){ try { return sessionStorage.getItem(k); } catch { return null; } }, set(k,v){ try { v==null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k,v); } catch {} } };
-function toast(t){ const el = document.getElementById("toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(()=> el.hidden = true, 2600); }
-function setMsg(t,m){ S.msg = {t,m}; }
-const methodNames = () => { const m = (S.settings.methods||[]).filter(x => x.on !== false && x.name).map(x => x.name); return m.length ? m : ["Cash"]; };
-const mkName = () => { const n = S.settings.marketName; return !n || OLD_BRANDS.includes(n) ? BRAND : n; };
-const isRentReason = p => !p.reason || RENT_ALIASES.includes(p.reason);
-const reasonOf = p => isRentReason(p) ? RENT : p.reason;
-const credit = p => { if (p.status === "pending" || p.status === "rejected") return 0;
-  if (p.rentCredit != null) return Number(p.rentCredit)||0;
-  return isRentReason(p) ? Math.max(0, (Number(p.amount)||0) - (Number(p.deductAmt)||0)) : 0; };
+/* --- hisaab --- */
+const payList=e=>Array.isArray(e.payments)?e.payments:[];
+function entryCalc(e){const due=(+e.rent||0)+(+e.extra||0);const paid=payList(e).reduce((a,p)=>a+(+p.amount||0),0)+(+e.paid||0);return{due,paid,bal:due-paid}}
+function status(e){const c=entryCalc(e);if(c.bal<=0)return['paid','Ada'];if(c.paid>0)return['part','Kuch baqi'];return['due','Baqaya']}
+function shopTotals(s){let due=0,paid=0;(s.entries||[]).forEach(e=>{const c=entryCalc(e);due+=c.due;paid+=c.paid});return{due,paid,bal:due-paid}}
+function invNo(s,e){return 'INV-'+s.code.replace('MK-','')+'-'+e.month.replace('-','')}
+const sortE=s=>[...(s.entries||[])].sort((a,b)=>b.month.localeCompare(a.month));
 
-/* ---------- dates ---------- */
-const today = () => new Date();
-const pad = n => String(n).padStart(2,"0");
-const todayISO = () => { const d = today(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
-const curMonth = () => { const d = today(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}`; };
-const monLabel = k => { const [y,m] = k.split("-"); return `${MON[+m-1]} ${y}`; };
-const fmtD = iso => { if (!iso) return "—"; const d = new Date(iso.length===10 ? iso+"T00:00:00" : iso); return isNaN(d) ? iso : `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}`; };
-const fmtWhen = p => { const t = p.at || p.date; if (!t) return "—"; const d = new Date(p.at ? t : t+"T00:00:00"); if (isNaN(d)) return String(t);
-  let s = `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}`;
-  if (p.at){ const h = d.getHours(); s += `, ${h % 12 || 12}:${pad(d.getMinutes())} ${h < 12 ? "AM" : "PM"}`; }
-  return s; };
-const sortKey = p => p.at || p.date || "";
-function monthsFrom(startISO, endISO){
-  if (!startISO) return [];
-  let [y,m] = startISO.split("-").map(Number); const end = endISO ? endISO.slice(0,7) : curMonth(); const out = [];
-  while (out.length < 240){ const k = `${y}-${pad(m)}`; if (k > end) break; out.push(k); m++; if (m>12){m=1;y++;} }
-  return out;
-}
+/* --- PIN + code se lock (karayadar ka data sirf sahi code+PIN se khulta hai) --- */
+const te=new TextEncoder();
+const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b)));
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function portalId(code,pin){return hex(await crypto.subtle.digest('SHA-256',te.encode('mkk-id|'+code+'|'+pin))).slice(0,40)}
+async function portalKey(code,pin){const base=await crypto.subtle.importKey('raw',te.encode(code+'|'+pin),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt:te.encode('mkk-v1|'+code),iterations:120000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function sealShop(s){const{pin,...pub}=s;const iv=crypto.getRandomValues(new Uint8Array(12));const k=await portalKey(s.code,s.pin);
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},k,te.encode(JSON.stringify(pub)));return{v:1,iv:b64(iv),ct:b64(ct),updatedAt:new Date().toISOString()}}
+async function openPortal(doc,code,pin){const k=await portalKey(code,pin);const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(doc.iv)},k,unb64(doc.ct));return JSON.parse(new TextDecoder().decode(pt))}
 
-/* ---------- rent maths ---------- */
-function calc(u){
-  if (!u || (u.status !== "occupied" && u.status !== "left") || !u.startDate) return null;
-  const rent = Number(u.rent)||0;
-  const months = monthsFrom(u.startDate, u.status === "left" ? u.endDate : "");
-  const confirmed = (u.payments||[]).filter(p => p.status !== "pending" && p.status !== "rejected");
-  const byMonth = {}; confirmed.forEach(p => byMonth[p.month] = (byMonth[p.month]||0) + credit(p));
-  const paid = confirmed.reduce((s,p)=>s+credit(p),0);
-  const other = confirmed.reduce((s,p)=>s+(Number(p.amount)||0)-credit(p),0);
-  const received = confirmed.reduce((s,p)=>s+(Number(p.amount)||0),0);
-  const expected = rent * months.length;
-  const balance = Math.max(0, expected - paid), advance = Math.max(0, paid - expected);
-  const cm = curMonth(), curPaid = byMonth[cm]||0, dueDay = Number(u.dueDay)||5;
-  let cur;
-  if (u.status === "left") cur = {k:"off", t:"Left"};
-  else if (!months.includes(cm)) cur = {k:"off", t:"Not started"};
-  else if (curPaid >= rent) cur = {k:"ok", t:"Paid"};
-  else if (curPaid > 0) cur = {k:"warn", t:"Part paid"};
-  else if (today().getDate() > dueDay) cur = {k:"bad", t:"Late"};
-  else cur = {k:"warn", t:`Due by ${dueDay}th`};
-  const unpaidMonths = months.filter(k => (byMonth[k]||0) < rent && (k < cm || today().getDate() > dueDay)).length;
-  const paidMonths = months.filter(k => (byMonth[k]||0) >= rent).length;
-  return {rent, months, byMonth, paid, expected, balance, advance, cur, curPaid, unpaidMonths, paidMonths, other, received};
-}
-const isLate = (u,k) => k < curMonth() || today().getDate() > (Number(u.dueDay)||5);
-function monthStrip(u, c){
-  return `<div class="months">${c.months.slice(-12).map(k => { const p = c.byMonth[k]||0;
-    const cls = p >= c.rent ? "ok" : p > 0 ? "part" : isLate(u,k) ? "due" : "";
-    return `<div class="mon ${cls} ${k===curMonth()?"cur":""}" title="${monLabel(k)}"><b>${monLabel(k)}</b><span>${p>=c.rent?"Paid":p>0?"Part":isLate(u,k)?"Unpaid":"—"}</span></div>`; }).join("")}</div>`;
-}
-function fullHistory(u, c){
-  const pays = (u.payments||[]).filter(p => p.status !== "rejected");
-  const rows = [...c.months].reverse().map(k => {
-    const ps = pays.filter(p => p.month === k).sort((a,b)=>sortKey(a).localeCompare(sortKey(b)));
-    const got = c.byMonth[k]||0, left = Math.max(0, c.rent - got), late = isLate(u,k);
-    const st = got >= c.rent ? ["ok","Paid"] : got > 0 ? ["warn","Part paid"] : late ? ["bad","Unpaid"] : ["warn","Not due yet"];
-    return `<tr style="${left&&late?"color:var(--danger)":""}"><td><strong>${monLabel(k)}</strong></td><td class="num">${rs(c.rent)}</td><td class="num">${got?rs(got):"—"}</td>
-      <td class="num" style="${left&&late?"font-weight:700":""}">${left?rs(left):"—"}</td>
-      <td>${ps.length?ps.map(p=>`<div style="font-size:13px"><span class="mono">${esc(fmtWhen(p))}</span>${p.rcptNo?` · <span class="code" style="font-size:12px">${esc(p.rcptNo)}</span>`:""}${p.status==="pending"?' <span class="pill warn">Awaiting approval</span>':""}</div>`).join(""):'<span class="hint">—</span>'}</td>
-      <td><span class="pill ${st[0]}">${st[1]}</span></td><td><button type="button" class="btn sm" data-inv="${esc(u.id)}|${k}">Invoice</button></td></tr>`; }).join("");
-  return `<div class="tbl-wrap"><table class="wide"><thead><tr><th>Month</th><th class="num">Rent</th><th class="num">Paid</th><th class="num">Remaining</th><th>Paid on · receipt no.</th><th>Status</th><th></th></tr></thead>
-    <tbody>${rows}</tbody>
-    <tfoot><tr><th>Total (${c.months.length} months)</th><th class="num">${rs(c.expected)}</th><th class="num">${rs(c.paid)}</th><th class="num" style="${c.balance?"color:var(--danger)":""}">${rs(c.balance)}</th><th colspan="3">${c.advance?"Advance "+rs(c.advance):""}</th></tr></tfoot></table></div>`;
-}
+let toastT;function toast(t){let el=$('.toast');if(!el){el=document.createElement('div');el.className='toast';document.body.appendChild(el)}el.textContent=t;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,2600)}
+async function copy(t){try{await navigator.clipboard.writeText(t);toast('Copy ho gaya')}catch(e){const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Copy ho gaya')}catch(_){toast('Copy nahi hua, khud select karein')}ta.remove()}}
 
-/* ---------- receipt numbers & verification codes ---------- */
-async function sha256hex(s){
-  if (window.crypto?.subtle){ const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
-  let h1 = 0x811c9dc5, h2 = 0x01000193; for (const ch of s){ h1 = Math.imul(h1 ^ ch.charCodeAt(0), 16777619)>>>0; h2 = Math.imul(h2 ^ ch.charCodeAt(0), 2246822519)>>>0; }
-  return h1.toString(16).padStart(8,"0") + h2.toString(16).padStart(8,"0");
-}
-const normCode = s => String(s||"").toUpperCase().replace(/[^0-9A-F]/g,"");
-const fmtCode = s => { const n = normCode(s); return n ? n.slice(0,4) + "-" + n.slice(4,8) : ""; };
-const normNo = s => String(s||"").toUpperCase().replace(/\s+/g,"");
-async function ensureSecrets(){
-  if (S.salt) return;
-  const sec = await S.db.doc("admin/secret").get();
-  if (sec.exists && sec.data().salt) S.salt = sec.data().salt;
-  else { const a = new Uint8Array(16); crypto.getRandomValues(a); S.salt = [...a].map(x=>x.toString(16).padStart(2,"0")).join(""); await write(()=>S.db.doc("admin/secret").set({salt:S.salt})); }
-  const ct = await S.db.doc("admin/counter").get(); S.counter = ct.exists ? Number(ct.data().n)||0 : 0;
-}
-// Owner only: allocate the next receipt number and its verification code, and register it.
-async function issueReceipt(u, p){
-  await ensureSecrets();
-  const year = new Date(p.at || Date.now()).getFullYear();
-  const seq = S.counter + 1;
-  const no = `RCT-${year}-${String(seq).padStart(6,"0")}`;
-  const code = fmtCode((await sha256hex(`${S.salt}|${no}|${u.id}|${p.id}|${p.amount}|${p.at}`)).slice(0,8));
-  await write(()=>S.db.doc("admin/counter").set({n:seq}));
-  S.counter = seq;
-  await write(()=>S.db.doc("receipts/"+no).set({code, shopCode:u.id, shopNo:u.shopNo, tenant:u.tenant, amount:Number(p.amount)||0, rentCredit:credit({...p, status:"confirmed"}), reason:reasonOf(p), month:p.month, paidAt:p.at||"", approvedAt:p.confirmedAt||new Date().toISOString(), pid:p.id, status:"valid"}));
-  return {rcptNo:no, rcptCode:code};
-}
-let migrating = false;
-async function migrateReceipts(){
-  if (migrating || !S.isOwner || !S.db) return;
-  const todo = S.units.flatMap(u => (u.payments||[]).filter(p => (p.status==="confirmed" || !p.status) && !p.rcptNo).map(p => ({u, p})));
-  if (!todo.length) return;
-  migrating = true;
-  try {
-    const byUnit = {};
-    todo.sort((a,b)=>sortKey(a.p).localeCompare(sortKey(b.p)));
-    for (const {u,p} of todo){ const r = await issueReceipt(u, p); (byUnit[u.id] ||= {})[p.id] = r; }
-    for (const id of Object.keys(byUnit)){
-      const snap = await S.db.doc("units/"+id).get(); if (!snap.exists) continue;
-      const pays = (snap.data().payments||[]).map(p => byUnit[id][p.id] ? {...p, ...byUnit[id][p.id]} : p);
-      await write(()=>S.db.doc("units/"+id).update({payments:pays}));
-    }
-  } catch {}
-  migrating = false;
-}
-async function voidReceipt(no){ if (!no) return; try { const r = await S.db.doc("receipts/"+no).get(); if (r.exists) await write(()=>S.db.doc("receipts/"+no).update({status:"cancelled", cancelledAt:new Date().toISOString()})); } catch {} }
+let db=null,downloads=null,isAdmin=false;
+let settings={marketName:'',ownerName:'',phone:'',address:'',payMethods:[]};
+let shops=[],loaded=false,invMonth=null;
+let view={tab:'shops',shop:null,q:'',showOld:false};
+let tenantShop=null,tenantErr='',tenantCred=null,tenantUnsub=null;
+const pms=()=>Array.isArray(settings.payMethods)?settings.payMethods:[];
+const methodOptions=()=>[...new Set(['Cash',...pms().map(p=>p.title).filter(Boolean),'Bank transfer','JazzCash','Easypaisa','Cheque'])];
+function payHTML(){const l=pms();if(!l.length)return'';return `<div class="grid g2">${l.map(p=>`<div class="paybox"><span class="lbl">${esc(p.title)}</span><b style="user-select:all">${esc(p.number)}</b><span class="muted">${esc(p.holder||'')}</span></div>`).join('')}</div>`}
+const active=()=>shops.filter(s=>!s.closed);
 
-/* ---------- invoices & receipts ---------- */
-function findUnit(id){ return S.units.find(x=>x.id===id) || (S.myUnit && S.myUnit.id===id ? S.myUnit : null); }
-function invoiceData(u, k){
-  const c = calc(u); if (!c || !c.months.includes(k)) return null;
-  const idx = c.months.indexOf(k);
-  const paidBefore = (u.payments||[]).filter(p => p.status!=="pending" && p.status!=="rejected" && p.month < k).reduce((s,p)=>s+credit(p),0);
-  const before = c.rent*idx - paidBefore, thisPaid = c.byMonth[k]||0;
-  const lines = [[`Monthly rent — ${monLabel(k)}`, c.rent]];
-  if (before > 0) lines.push(["Previous balance", before]);
-  if (before < 0) lines.push(["Previous advance", before]);
-  const gross = c.rent + before, total = gross - thisPaid;
-  return {type:"INV", no:`INV-${u.id}-${k.replace("-","")}`, issued:`${k}-01`, due:`${k}-${pad(Number(u.dueDay)||5)}`, month:k,
-    u, lines, gross, paid:thisPaid, total:Math.max(0,total), credit: total<0 ? -total : 0, isPaid: total <= 0,
-    pays:(u.payments||[]).filter(p=>p.month===k && credit(p) > 0)};
+function applySettings(){
+  const n=settings.marketName||'Market Kiraya Khata';
+  $('#mktName').textContent=n;$('#markLetter').textContent=(n.trim()[0]||'K').toUpperCase();
+  $('#mktSub').textContent=settings.address||(isAdmin?'Malik panel':'Karayadar: code aur PIN se apna kiraya dekhein');
 }
-function receiptData(u, pid){
-  const p = (u.payments||[]).find(x=>x.id===pid); if (!p) return null; const c = calc(u);
-  const amt = Number(p.amount)||0, cr = p.status==="confirmed" || !p.status ? credit(p) : (isRentReason(p) ? amt : 0);
-  const lines = [[`Amount received — ${reasonOf(p)}`, amt]];
-  const ded = amt - cr;
-  if (ded > 0) lines.push([`Deducted — ${p.deductReason || (isRentReason(p) ? "Other" : reasonOf(p))}`, -ded]);
-  lines.push([`Credited to rent — ${monLabel(p.month)}`, cr]);
-  return {type:"RCT", no:p.rcptNo || "Number pending", code:p.rcptCode || "", month:p.month, u, p,
-    lines, total:amt, rentCredit:cr, deducted:ded, balance:c?.balance||0,
-    isPaid:p.status!=="pending" && p.status!=="rejected", pending:p.status==="pending", rejected:p.status==="rejected"};
-}
-const stampText = d => d.rejected ? "REJECTED" : d.pending ? "PENDING" : d.isPaid ? "PAID" : "UNPAID";
-function invoiceHTML(d){
-  const st = S.settings, u = d.u, inv = d.type==="INV";
-  const methods = (st.methods||[]).filter(m=>m.on!==false && m.name);
-  return `<article class="invoice" id="inv-doc">
-    <div class="inv-head">
-      <div><div class="mk">${esc(mkName())}</div>
-        <div class="hint" style="color:#333">${esc(st.landlord||"")}${st.landlordPhone?` · <span class="mono">${esc(st.landlordPhone)}</span>`:""}</div></div>
-      <div class="doc"><b>${inv?"INVOICE":"RECEIPT"}</b><span class="code">${esc(d.no)}</span></div>
-    </div>
-    <div class="inv-meta">
-      <div><span class="eyebrow">Tenant</span><strong>${esc(u.tenant)}</strong><span class="mono">${esc(u.phone||"")}</span>${u.business?`<span>${esc(u.business)}</span>`:""}</div>
-      <div><span class="eyebrow">Shop</span><strong>${esc(u.shopNo)}</strong><span>${esc([u.floor,u.size].filter(Boolean).join(" · "))}</span><span>Shop code <span class="mono">${esc(u.id)}</span></span></div>
-      <div><span class="eyebrow">${inv?"Dates":"Payment"}</span>${inv?`<span>Issued: <strong>${fmtD(d.issued)}</strong></span><span>Due by: <strong>${fmtD(d.due)}</strong></span><span>Month: <strong>${monLabel(d.month)}</strong></span>`
-        :`<span>Paid: <strong>${esc(fmtWhen(d.p))}</strong></span><span>Method: <strong>${esc(d.p.method)}</strong></span><span>Purpose: <strong>${esc(reasonOf(d.p))}</strong></span>${d.p.note?`<span>Note: ${esc(d.p.note)}</span>`:""}${d.p.confirmedAt&&d.p.status==="confirmed"?`<span>Approved: ${esc(fmtWhen({at:d.p.confirmedAt}))}</span>`:""}`}</div>
-    </div>
-    <div style="overflow-x:auto"><table class="inv-lines"><thead><tr><th>Description</th><th class="amt">Amount</th></tr></thead><tbody>
-      ${d.lines.map(([l,a])=>`<tr><td>${esc(l)}</td><td class="amt">${a<0?"− "+rs(-a):rs(a)}</td></tr>`).join("")}
-      ${inv?`<tr><td><strong>Total</strong></td><td class="amt"><strong>${rs(d.gross)}</strong></td></tr>
-        ${d.pays.map(p=>`<tr><td>Paid · ${esc(fmtWhen(p))} · ${esc(p.method)}${p.rcptNo?` · ${esc(p.rcptNo)}`:""}</td><td class="amt">− ${rs(credit(p))}</td></tr>`).join("")}`:""}
-    </tbody></table></div>
-    <div class="inv-total">
-      <div><span class="eyebrow">${inv?"Amount due":"Amount received"}</span><div class="amt" style="${inv&&!d.isPaid?"color:var(--danger)":""}">Rs ${num(d.total)}</div>
-        ${inv&&d.credit?`<span class="hint">Advance remaining: ${rs(d.credit)}</span>`:""}${!inv?`<span class="hint">Current total balance: <span style="${d.balance?"color:var(--danger)":""}">${rs(d.balance)}</span></span>`:""}</div>
-      <span class="stamp ${d.isPaid?"":"unpaid"}">${stampText(d)}</span>
-    </div>
-    ${!inv && d.code ? `<div class="inv-verify"><div><span class="eyebrow">Verification code</span><div class="code">${esc(d.code)}</div></div><div class="hint" style="max-width:34ch">Check this receipt is genuine on the "Verify Receipt" page using receipt no. <span class="mono">${esc(d.no)}</span> and this code.</div></div>` : ""}
-    ${!inv && !d.code && d.isPaid ? `<div class="hint">The receipt number and verification code are being created. Reopen this receipt in a moment.</div>` : ""}
-    ${inv&&!d.isPaid&&methods.length?`<div class="inv-foot"><strong style="color:#000">How to pay</strong>${methods.map(m=>`<div><strong>${esc(m.name)}</strong>${m.details?` — <span class="mono">${esc(m.details)}</span>`:""}</div>`).join("")}</div>`:""}
-    <div class="inv-foot"><span>This is a computer-generated ${inv?"invoice":"receipt"} and needs no signature. ${esc(mkName())}</span></div>
-  </article>`;
-}
-function invText(d){
-  const st = S.settings, u = d.u;
-  const head = `${mkName()}\n${d.type==="INV"?"INVOICE":"RECEIPT"} ${d.no}\n\n${u.tenant} · ${u.shopNo} (Shop code ${u.id})\n`;
-  if (d.type === "INV") return head + `Month: ${monLabel(d.month)}\nDue by: ${fmtD(d.due)}\n\n${d.lines.map(([l,a])=>`${l}: ${rsT(a)}`).join("\n")}\nPaid: ${rsT(d.paid)}\nAmount due: ${rsT(d.total)}\nStatus: ${stampText(d)}${!d.isPaid?"\n\nHow to pay:\n"+(st.methods||[]).filter(m=>m.on!==false&&m.name).map(m=>`${m.name}${m.details?": "+m.details:""}`).join("\n"):""}`;
-  return head + `Purpose: ${reasonOf(d.p)}\nAmount received: ${rsT(d.total)}${d.deducted?`\nDeducted (${d.p.deductReason||"Other"}): ${rsT(d.deducted)}`:""}\nCredited to rent (${monLabel(d.month)}): ${rsT(d.rentCredit)}\nPaid: ${fmtWhen(d.p)}\nMethod: ${d.p.method}\nStatus: ${stampText(d)}\nTotal balance: ${rsT(d.balance)}${d.code?`\n\nVerification code: ${d.code}`:""}`;
-}
-function curInvoice(){ const o = S.invoice; if (!o) return null; const u = findUnit(o.id); if (!u) return null; return o.pid ? receiptData(u, o.pid) : invoiceData(u, o.month); }
-function renderOverlay(){
-  const el = document.getElementById("overlay");
-  if (S.proofView){ const img = S.proofCache[S.proofView];
-    el.innerHTML = `<div class="inv-actions"><button type="button" class="btn" data-close-inv>Close</button></div><div class="proof-view">${img?`<img src="${esc(img)}" alt="Payment proof">`:`<p class="muted">Loading proof…</p>`}<span class="hint">Payment proof uploaded by the tenant</span></div>`;
-    el.hidden = false; document.body.style.overflow = "hidden"; return; }
-  const d = curInvoice();
-  if (!d){ el.hidden = true; el.innerHTML = ""; document.body.style.overflow = ""; return; }
-  const wa = waLink(d.u.phone, invText(d));
-  el.innerHTML = `<div class="inv-actions">
-      ${window.jspdf && window.html2canvas && S.downloads ? `<button type="button" class="btn primary" data-pdf>Download PDF</button>` : ""}
-      ${S.isOwner && wa ? `<a class="btn" target="_blank" rel="noopener" href="${esc(wa)}">Send on WhatsApp</a>` : ""}
-      <button type="button" class="btn" data-copy="${esc(invText(d))}">Copy text</button>
-      <button type="button" class="btn" data-close-inv>Close</button></div>${invoiceHTML(d)}`;
-  el.hidden = false; document.body.style.overflow = "hidden";
-}
-async function downloadPDF(btn){
-  const d = curInvoice(), node = document.getElementById("inv-doc"); if (!d || !node) return;
-  btn.disabled = true; btn.textContent = "Creating PDF…";
-  try {
-    if (document.fonts?.ready) await document.fonts.ready;
-    const canvas = await window.html2canvas(node, {scale:2, backgroundColor:"#ffffff", useCORS:true, logging:false});
-    const { jsPDF } = window.jspdf; const pdf = new jsPDF({unit:"pt", format:"a4"});
-    const W = 595.28, H = 841.89, m = 28, w = W - m*2, h = canvas.height * w / canvas.width;
-    const img = canvas.toDataURL("image/jpeg", 0.92);
-    if (h <= H - m*2) pdf.addImage(img, "JPEG", m, m, w, h);
-    else { const s = (H - m*2) / h; pdf.addImage(img, "JPEG", m + (w - w*s)/2, m, w*s, H - m*2); }
-    await S.downloads.save({filename:`${d.no.replace(/\s+/g,"-")}.pdf`, data:pdf.output("blob")}); toast("PDF saved");
-  } catch(e){ if (e?.code !== "declined") toast(e?.code==="rate_limited" ? "Please wait a moment and try again" : "Could not create the PDF"); }
-  btn.disabled = false; btn.textContent = "Download PDF";
-}
-function invoiceList(u, c){
-  return `<div class="tbl-wrap"><table><thead><tr><th>Month</th><th class="num">Amount due</th><th>Status</th><th></th></tr></thead><tbody>
-    ${[...c.months].reverse().map(k=>{ const d = invoiceData(u,k); return `<tr style="${d.isPaid?"":"color:var(--danger)"}"><td>${monLabel(k)}<div class="hint mono">${esc(d.no)}</div></td><td class="num">${rs(d.total)}</td><td><span class="pill ${d.isPaid?"ok":"bad"}">${d.isPaid?"Paid":"Unpaid"}</span></td><td><button type="button" class="btn sm" data-inv="${esc(u.id)}|${k}">Invoice</button></td></tr>`; }).join("")}
-  </tbody></table></div>`;
-}
-function receiptList(u){
-  const list = (u.payments||[]).filter(p => p.status==="confirmed" || !p.status).sort((a,b)=>sortKey(b).localeCompare(sortKey(a)));
-  if (!list.length) return `<div class="empty"><p class="muted">No receipts yet. Receipts appear here once a payment is approved.</p></div>`;
-  return `<div class="tbl-wrap"><table class="wide"><thead><tr><th>Receipt no.</th><th>Verification code</th><th>Paid</th><th>Purpose</th><th class="num">Amount</th><th class="num">To rent</th><th></th></tr></thead><tbody>
-    ${list.map(p=>`<tr><td class="code">${esc(p.rcptNo||"Pending")}</td><td class="code">${esc(p.rcptCode||"—")}</td><td class="mono" style="font-size:13px">${esc(fmtWhen(p))}</td><td>${esc(reasonOf(p))} · ${monLabel(p.month)}</td><td class="num">${rs(p.amount)}</td><td class="num">${rs(credit(p))}</td><td><button type="button" class="btn sm" data-rcpt="${esc(u.id)}|${esc(p.id)}">Receipt</button></td></tr>`).join("")}
-  </tbody></table></div>`;
-}
-function payBox(){
-  const st = S.settings, ms = (st.methods||[]).filter(m => m.on !== false && m.name);
-  return `<div class="paybox"><span class="eyebrow">How to pay rent</span>
-    ${ms.map(m=>`<div class="pm"><strong>${esc(m.name)}</strong>${m.details?`<div>${esc(m.details)}</div>`:""}</div>`).join("")}
-    ${st.landlord||st.landlordPhone?`<div class="hint">Landlord: ${esc(st.landlord)} ${st.landlordPhone?`· <span class="mono">${esc(st.landlordPhone)}</span>`:""}</div>`:""}</div>`;
-}
+function refresh(){try{document.activeElement&&document.activeElement.blur()}catch(_){}render()}
 
-/* ---------- receipt verification (everyone) ---------- */
-function viewVerify(){
-  const v = S.verify;
-  return `<div class="two">
-    <section class="stack">
-      <span class="eyebrow">For tenants, landlords and anyone shown a receipt</span>
-      <h1 class="display h1">Verify a receipt</h1>
-      <p style="margin:0;max-width:52ch">Every approved payment gets its own receipt number (for example <span class="mono">RCT-2026-000001</span>) and an 8-character verification code. Enter both to confirm the receipt is genuine and see what it was for.</p>
-      <p class="hint">Only the landlord's system can create receipt numbers and codes, so a receipt that does not match here was not issued by ${esc(mkName())}.</p>
-    </section>
-    <form class="panel stack" id="verifyForm" autocomplete="off">
-      <label class="fld">Receipt number<input id="v-no" required placeholder="RCT-2026-000001" value="${esc(v?.no||"")}" style="text-transform:uppercase;font-family:var(--f-mono)"></label>
-      <label class="fld">Verification code<input id="v-code" required placeholder="XXXX-XXXX" value="${esc(v?.code||"")}" style="text-transform:uppercase;font-family:var(--f-mono);letter-spacing:.06em"></label>
-      <button class="btn primary" type="submit" ${S.busy?"disabled":""}>Check receipt</button>
-      ${v?.result ? (v.result.ok ? `<div class="verify-result"><span class="big">Genuine receipt</span>
-          <dl class="kv"><dt>Receipt no.</dt><dd class="code">${esc(v.result.no)}</dd><dt>Shop</dt><dd>${esc(v.result.r.shopNo)} · <span class="mono">${esc(v.result.r.shopCode)}</span></dd><dt>Tenant</dt><dd>${esc(v.result.r.tenant)}</dd>
-          <dt>Amount</dt><dd>${rs(v.result.r.amount)}</dd><dt>Credited to rent</dt><dd>${rs(v.result.r.rentCredit)}</dd><dt>Purpose</dt><dd>${esc(v.result.r.reason)} · ${monLabel(v.result.r.month)}</dd>
-          <dt>Paid</dt><dd>${esc(fmtWhen({at:v.result.r.paidAt}))}</dd><dt>Approved</dt><dd>${esc(fmtWhen({at:v.result.r.approvedAt}))}</dd></dl></div>`
-        : `<div class="verify-result bad"><span class="big">${v.result.cancelled?"Cancelled receipt":"Not valid"}</span><span>${esc(v.result.why)}</span></div>`) : ""}
-    </form>
-  </div>`;
+/* --- save: malik ka record + karayadar ka band (locked) record, dono --- */
+async function saveShop(s,{oldPin}={}){
+  await db.doc('shops/'+s.code).set(s);
+  if(s.pin){await db.doc('portal/'+await portalId(s.code,s.pin)).set(await sealShop(s))}
+  if(oldPin&&oldPin!==s.pin){try{await db.doc('portal/'+await portalId(s.code,oldPin)).delete()}catch(_){}}
 }
-async function doVerify(no, code){
-  S.verify = {no, code, result:null}; S.busy = true; render();
-  try {
-    if (!S.db) throw {m:"Database unavailable. Open the page while signed in."};
-    const n = normNo(no);
-    if (!/^RCT-\d{4}-\d{6}$/.test(n)) S.verify.result = {ok:false, why:"Receipt numbers look like RCT-2026-000001. Check the number on the receipt."};
-    else { const snap = await S.db.doc("receipts/"+n).get();
-      if (!snap.exists) S.verify.result = {ok:false, why:"No receipt with this number exists."};
-      else { const r = snap.data();
-        if (normCode(r.code) !== normCode(code)) S.verify.result = {ok:false, why:"The verification code does not match this receipt number."};
-        else if (r.status === "cancelled") S.verify.result = {ok:false, cancelled:true, why:`This receipt was cancelled by the landlord${r.cancelledAt?" on "+fmtD(r.cancelledAt):""}.`};
-        else S.verify.result = {ok:true, no:n, r}; } }
-  } catch(e){ S.verify.result = {ok:false, why:errText(e)}; }
-  S.busy = false; render();
-}
-
-/* ---------- months ---------- */
-function allMonths(){
-  const starts = S.units.map(u => u.startDate).filter(Boolean).sort();
-  return starts.length ? monthsFrom(starts[0]).reverse() : [curMonth()];
-}
-function monthRows(k){
-  return S.units.map(u => [u, calc(u)]).filter(([,c]) => c && c.months.includes(k))
-    .map(([u,c]) => { const got = c.byMonth[k]||0; const pays = (u.payments||[]).filter(p => p.month===k && credit(p) > 0);
-      return {u, rent:c.rent, got, left:Math.max(0,c.rent-got), late:isLate(u,k), when: pays.map(fmtWhen).join(" / ")}; })
-    .sort((a,b)=> String(a.u.shopNo).localeCompare(String(b.u.shopNo), undefined, {numeric:true}));
-}
-function viewMonths(){
-  const ms = allMonths(); if (!S.selMonth || !ms.includes(S.selMonth)) S.selMonth = ms[0];
-  const sum = k => { const r = monthRows(k); return {n:r.length, due:r.reduce((s,x)=>s+x.rent,0), got:r.reduce((s,x)=>s+Math.min(x.rent,x.got),0), unpaid:r.filter(x=>x.left>0).length}; };
-  const rows = monthRows(S.selMonth);
-  return `<div style="margin-bottom:16px"><span class="eyebrow">Month-by-month accounts</span><h1 class="display h1">Months</h1></div>
-  <div class="two">
-    <section class="stack"><div class="tbl-wrap"><table class="mlist"><thead><tr><th>Month</th><th class="num">Collected</th><th class="num">Remaining</th><th class="num">Unpaid</th></tr></thead><tbody>
-      ${ms.map(k => { const x = sum(k); return `<tr class="click ${k===S.selMonth?"sel":""}" data-month="${k}" tabindex="0"><td>${monLabel(k)}</td><td class="num">${rs(x.got)}</td>
-        <td class="num" style="${x.due-x.got>0?"color:var(--danger);font-weight:700":""}">${rs(x.due-x.got)}</td>
-        <td class="num mono" style="${x.unpaid?"color:var(--danger);font-weight:700":""}">${x.unpaid}/${x.n}</td></tr>`; }).join("")}
-    </tbody></table></div></section>
-    <section class="stack">
-      <div class="row between"><h2 class="display h2">${monLabel(S.selMonth)}</h2><button type="button" class="btn sm" data-csv="month">Export CSV</button></div>
-      ${rows.length?`<div class="tbl-wrap"><table class="wide"><thead><tr><th>Shop</th><th>Tenant</th><th class="num">Rent</th><th class="num">Paid</th><th class="num">Remaining</th><th>Date &amp; time</th></tr></thead><tbody>
-        ${rows.map(r=>`<tr class="click" data-unit="${esc(r.u.id)}" style="${r.left?"color:var(--danger)":""}"><td><strong>${esc(r.u.shopNo)}</strong></td><td>${esc(r.u.tenant)}</td><td class="num">${rs(r.rent)}</td><td class="num">${r.got?rs(r.got):"—"}</td><td class="num" style="${r.left?"font-weight:700":""}">${r.left?rs(r.left):"—"}</td><td class="mono" style="font-size:13px">${esc(r.when||"—")}</td></tr>`).join("")}
-      </tbody></table></div>`:`<div class="empty"><p class="muted">No shop was rented out this month.</p></div>`}
-      <p class="hint" style="margin:0">Shops in red still owe rent. Click a shop to record a payment.</p>
-    </section>
-  </div>`;
-}
-
-/* ---------- invoices page ---------- */
-function viewInvoices(){
-  const ms = allMonths(); if (!S.selMonth || !ms.includes(S.selMonth)) S.selMonth = ms[0];
-  const list = S.units.map(u => invoiceData(u, S.selMonth)).filter(Boolean).sort((a,b)=>String(a.u.shopNo).localeCompare(String(b.u.shopNo),undefined,{numeric:true}));
-  const due = list.reduce((s,d)=>s+d.total,0), unpaid = list.filter(d=>!d.isPaid).length;
-  return `<div class="row between" style="margin-bottom:16px"><div><span class="eyebrow">Monthly invoice for every tenant</span><h1 class="display h1">Invoices</h1></div>
-      <label class="fld" style="min-width:200px">Month<select id="inv-month">${ms.map(k=>`<option value="${k}" ${k===S.selMonth?"selected":""}>${monLabel(k)}</option>`).join("")}</select></label></div>
-    <div class="stats" style="margin-bottom:20px">
-      <div class="stat"><b>${list.length}</b><span>Invoices · ${monLabel(S.selMonth)}</span></div>
-      <div class="stat"><b>${list.length-unpaid}</b><span>Paid</span></div>
-      <div class="stat ${unpaid?"alert":""}"><b>${unpaid}</b><span>Unpaid</span></div>
-      <div class="stat ${due?"alert":""}"><b>Rs ${num(due)}</b><span>Total due</span></div>
-    </div>
-    ${list.length?`<div class="tbl-wrap"><table class="wide"><thead><tr><th>Invoice no.</th><th>Shop</th><th>Tenant</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Due</th><th>Status</th><th></th></tr></thead><tbody>
-      ${list.map(d=>`<tr style="${d.isPaid?"":"color:var(--danger)"}"><td class="mono">${esc(d.no)}</td><td><strong>${esc(d.u.shopNo)}</strong></td><td>${esc(d.u.tenant)}</td><td class="num">${rs(d.gross)}</td><td class="num">${d.paid?rs(d.paid):"—"}</td><td class="num" style="font-weight:700">${rs(d.total)}</td>
-        <td><span class="pill ${d.isPaid?"ok":"bad"}">${d.isPaid?"Paid":"Unpaid"}</span></td><td><button type="button" class="btn sm" data-inv="${esc(d.u.id)}|${d.month}">View invoice</button></td></tr>`).join("")}
-    </tbody></table></div>`:`<div class="empty"><h3>No invoices</h3><p class="muted">No shop was rented out this month.</p></div>`}`;
-}
-
-/* ---------- settings ---------- */
-function viewSettings(){
-  const st = S.settings; if (!S.draft) S.draft = JSON.parse(JSON.stringify(st.methods||[]));
-  return `<div style="margin-bottom:16px"><span class="eyebrow">Landlord only</span><h1 class="display h1">Settings</h1></div>
-  ${S.msg?`<div style="margin-bottom:16px">${msgHTML()}</div>`:""}
-  <div class="two">
-    <form class="panel stack" id="settingsForm">
-      <h2 class="display h2">Market &amp; landlord</h2>
-      <div class="fgrid">
-        <label class="fld full">Market name<input id="s-market" value="${esc(mkName())}"></label>
-        <label class="fld">Landlord name<input id="s-landlord" value="${esc(st.landlord)}"></label>
-        <label class="fld">Landlord mobile<input id="s-phone" type="tel" value="${esc(st.landlordPhone)}"></label>
-        <label class="fld">Rent due each month by day<input id="s-due" type="number" min="1" max="28" value="${esc(st.dueDay||5)}"><span class="hint">Applies to new shops.</span></label>
-      </div>
-      <h2 class="display h2">Payment methods</h2>
-      <p class="hint" style="margin:0">Tenants see these methods and account details. Methods switched off are hidden.</p>
-      <div>${S.draft.map((m,i)=>`<div class="method-row">
-        <label class="fld">Name<input id="s-mname-${i}" value="${esc(m.name)}" placeholder="e.g. JazzCash"></label>
-        <label class="fld">Account details<textarea id="s-mdet-${i}" rows="2" placeholder="Account title, number">${esc(m.details)}</textarea></label>
-        <label class="fld" style="align-self:center">On<input id="s-mon-${i}" type="checkbox" ${m.on!==false?"checked":""} style="width:auto"></label>
-        <button type="button" class="btn sm danger" data-rm-method="${i}">Remove</button></div>`).join("")}</div>
-      <div class="row"><button type="button" class="btn sm" data-add-method>+ Add method</button></div>
-      <button class="btn primary" type="submit" ${S.busy?"disabled":""}>Save settings</button>
-    </form>
-    <section class="panel stack">
-      <h2 class="display h2">CSV export</h2>
-      <p class="hint" style="margin:0">Opens in Excel or Google Sheets.</p>
-      <div class="stack" style="gap:10px">
-        <button type="button" class="btn" data-csv="units">All shops and balances</button>
-        <button type="button" class="btn" data-csv="payments">All payments with receipt numbers</button>
-        <button type="button" class="btn" data-csv="months">Monthly summary</button>
-        <button type="button" class="btn" data-csv="invoices">This month's invoices</button>
-      </div>
-      ${S.downloads?"":`<p class="hint" style="margin:0">Downloads are not available on this page. Pressing a button copies the CSV so you can paste it into Excel.</p>`}
-      <h2 class="display h2" style="margin-top:8px">Receipts</h2>
-      <p class="hint" style="margin:0">Receipts issued so far: <span class="mono">${S.counter}</span>. Numbers run in order and are never reused, even if a payment is deleted.</p>
-    </section>
-  </div>`;
-}
-function readDraft(){ const f = document.getElementById("settingsForm"); if (!f || !S.draft) return;
-  S.draft = S.draft.map((m,i) => ({name:f.querySelector("#s-mname-"+i)?.value.trim() ?? m.name, details:f.querySelector("#s-mdet-"+i)?.value.trim() ?? m.details, on:f.querySelector("#s-mon-"+i)?.checked ?? m.on})); }
-
-/* ---------- CSV ---------- */
-const csvCell = v => { const t = String(v ?? ""); return /[",\n]/.test(t) ? '"' + t.replace(/"/g,'""') + '"' : t; };
-const toCSV = rows => "﻿" + rows.map(r => r.map(csvCell).join(",")).join("\r\n");
-const statusName = u => u.status==="occupied"?"Rented":u.status==="left"?"Left":"Vacant";
-const payStatus = p => p.status==="pending"?"Awaiting approval":p.status==="rejected"?"Rejected":"Received";
-const PAY_HEAD = ["Receipt no.","Verification code","For month","Purpose","Amount","Credited to rent","Deducted","Deduction reason","Paid (date & time)","Approved","Method","Note","Status","Recorded by"];
-const payRow = p => [p.rcptNo||"",p.rcptCode||"",monLabel(p.month),reasonOf(p),p.amount,credit(p),(Number(p.amount)||0)-credit(p),p.deductReason||"",fmtWhen(p),p.confirmedAt?fmtWhen({at:p.confirmedAt}):"",p.method,p.note,payStatus(p),p.by==="tenant"?"Tenant":"Landlord"];
-function buildCSV(kind){
-  if (kind === "units") return ["shops", [["Shop code","Shop","Floor","Tenant","Mobile","Business","Status","Monthly rent","Rent start","Left on","Months","Total rent","Paid","Balance"],
-    ...S.units.map(u => { const c = calc(u); return [u.id,u.shopNo,u.floor,u.tenant,u.phone,u.business,statusName(u),u.rent,u.startDate,u.endDate||"",c?.months.length||0,c?.expected||0,c?.paid||0,c?.balance||0]; })]];
-  if (kind === "payments") return ["payments", [["Shop code","Shop","Tenant",...PAY_HEAD],
-    ...S.units.flatMap(u => (u.payments||[]).map(p => ({k:sortKey(p), r:[u.id,u.shopNo,u.tenant,...payRow(p)]}))).sort((a,b)=>b.k.localeCompare(a.k)).map(x=>x.r)]];
-  if (kind === "months") return ["months", [["Month","Shops","Total rent","Collected","Remaining","Unpaid shops"],
-    ...allMonths().map(k => { const r = monthRows(k); const due = r.reduce((s,x)=>s+x.rent,0), got = r.reduce((s,x)=>s+Math.min(x.rent,x.got),0); return [monLabel(k), r.length, due, got, due-got, r.filter(x=>x.left>0).length]; })]];
-  if (kind === "month"){ const k = S.selMonth; return ["month-"+k, [["Shop code","Shop","Tenant","Mobile","Rent","Paid","Remaining","Date & time"],
-    ...monthRows(k).map(r => [r.u.id,r.u.shopNo,r.u.tenant,r.u.phone,r.rent,r.got,r.left,r.when])]]; }
-  if (kind === "invoices"){ const k = S.selMonth || curMonth(); return ["invoices-"+k, [["Invoice no.","Shop","Tenant","Mobile","Month","Total","Paid","Due","Status"],
-    ...S.units.map(u=>invoiceData(u,k)).filter(Boolean).map(d => [d.no,d.u.shopNo,d.u.tenant,d.u.phone,monLabel(k),d.gross,d.paid,d.total,d.isPaid?"Paid":"Unpaid"])]]; }
-  if (kind === "mine"){ const u = S.myUnit, c = calc(u);
-    const rows = [[`${mkName()} — full statement`],["Shop",u.shopNo],["Shop code",u.id],["Tenant",u.tenant],["Rent start",fmtD(u.startDate)],["Monthly rent",u.rent],["Total rent to date",c.expected],["Total credited",c.paid],["Balance",c.balance],[],
-      ["Month","Rent","Paid","Remaining","Status"], ...c.months.map(k => { const g = c.byMonth[k]||0; return [monLabel(k), c.rent, g, Math.max(0,c.rent-g), g>=c.rent?"Paid":g>0?"Part paid":isLate(u,k)?"Unpaid":"Not due yet"]; }), [],
-      PAY_HEAD, ...[...(u.payments||[])].sort((a,b)=>sortKey(a).localeCompare(sortKey(b))).map(payRow)];
-    return ["statement-"+u.id, rows]; }
-}
-async function exportCSV(kind){
-  const [name, rows] = buildCSV(kind); const data = toCSV(rows); const filename = `rent-link-${name}-${todayISO()}.csv`;
-  if (S.downloads){
-    try { await S.downloads.save({filename, data}); toast("CSV saved"); return; }
-    catch(e){ if (e?.code === "declined") return; if (e?.code === "rate_limited"){ toast("Please wait a moment and try again"); return; } }
-  }
-  try { await navigator.clipboard.writeText(data.replace(/^﻿/,"")); toast("CSV copied — paste it into Excel"); } catch { toast("Export failed"); }
-}
-
-/* ---------- payment proof images ---------- */
-function compressImage(file){
-  return new Promise((res, rej) => {
-    if (!file || !file.type.startsWith("image/")) return rej({m:"Please upload an image (JPG, PNG or a screenshot)."});
-    const fr = new FileReader();
-    fr.onload = () => { const img = new Image(); img.onload = () => {
-      let max = 1200, q = 0.72, out = "";
-      for (let i = 0; i < 6; i++){
-        const k = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement("canvas");
-        c.width = Math.round(img.width*k); c.height = Math.round(img.height*k); const x = c.getContext("2d");
-        x.fillStyle = "#fff"; x.fillRect(0,0,c.width,c.height); x.drawImage(img, 0, 0, c.width, c.height);
-        out = c.toDataURL("image/jpeg", q); if (out.length < 220000) break; max = Math.round(max*0.8); q = Math.max(0.45, q - 0.07);
-      }
-      res(out);
-    }; img.onerror = () => rej({m:"This image could not be opened."}); img.src = fr.result; };
-    fr.onerror = () => rej({m:"This image could not be read."}); fr.readAsDataURL(file);
-  });
-}
-const proofLoading = new Set();
-async function loadProof(pid){
-  if (!S.db || S.proofCache[pid] || proofLoading.has(pid)) return;
-  proofLoading.add(pid);
-  try { const d = await S.db.doc("proofs/"+pid).get(); S.proofCache[pid] = d.exists ? d.data().img : ""; } catch { S.proofCache[pid] = ""; }
-  proofLoading.delete(pid); if (!fieldsBusy()) render();
-}
-const proofImg = p => { if (!p.hasProof) return `<span class="hint">No proof</span>`; const src = S.proofCache[p.id]; if (src === undefined) loadProof(p.id);
-  return src ? `<img class="proof-thumb" src="${esc(src)}" alt="Proof" data-proof="${esc(p.id)}">` : `<button type="button" class="btn sm" data-proof="${esc(p.id)}">Proof</button>`; };
-const seenKey = code => "rlm-seen-" + code;
-function seenSet(code){ try { return new Set(JSON.parse(localStorage.getItem(seenKey(code))||"[]")); } catch { return new Set(); } }
-function markSeen(code, id){ try { const s = seenSet(code); s.add(id); localStorage.setItem(seenKey(code), JSON.stringify([...s].slice(-200))); } catch {} }
-
-/* ---------- helpers ---------- */
-function waNumber(p){ let d = String(p||"").replace(/\D/g,""); if (d.startsWith("00")) d = d.slice(2); if (d.startsWith("0")) d = "92" + d.slice(1); return d; }
-function waLink(p, text){ const n = waNumber(p); return n ? `https://wa.me/${n}?text=${encodeURIComponent(text||"")}` : ""; }
-async function copy(text, btn){
-  try { await navigator.clipboard.writeText(text); toast("Copied"); }
-  catch { const el = btn?.closest("[data-copy-scope]")?.querySelector(".mono"); if (el){ const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Text selected — copy it now"); } else toast("Could not copy"); }
-}
-async function hashPin(code, pin){
-  const msg = "rlm|" + code + "|" + pin;
-  if (window.crypto?.subtle){ const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(msg)); return {alg:"sha256", h:[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("")}; }
-  let h = 0x811c9dc5; for (const ch of msg){ h ^= ch.charCodeAt(0); h = Math.imul(h,16777619)>>>0; } return {alg:"fnv", h:h.toString(16)};
-}
-function rand(n){ const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; }
-function newCode(){ let c; do { c = "RL" + String(1000 + rand(9000)); } while (S.units.some(u => u.id === c)); return c; }
-function newPin(){ const used = new Set(Object.values(S.pins)); let p, n = 0; do { p = String(rand(10000)).padStart(4,"0"); n++; } while (used.has(p) && n < 500); return p; }
-const uid = () => Date.now().toString(36) + rand(1e6).toString(36);
-let chain = Promise.resolve();
-function write(fn){ const p = chain.then(fn); chain = p.catch(()=>{}); return p; }
-function errText(e){
-  if (e?.m) return e.m;
-  const c = e?.code;
-  if (c === "invalid_argument") return "Not saved: you don't have permission to write on this link. Ask the landlord for Contributor access.";
-  if (c === "quota_exceeded") return "The database is full. Remove old records.";
-  if (c === "unavailable" || c === "revoked") return "Connection lost. Reopen the page.";
-  return "Not saved: " + (e?.message || "unknown error") + ". Please try again.";
-}
-const fieldsBusy = () => { const id = document.activeElement?.id || ""; return /^(f-|p-|l-|c-|t-|s-|ap-|inv-|v-)/.test(id); };
+const clone=s=>JSON.parse(JSON.stringify(s));
 
 /* ---------- render ---------- */
-function renderTabs(){
-  const tabs = [];
-  if (S.isOwner) tabs.push(["admin","Rent Desk"],["months","Months"],["invoices","Invoices"],["settings","Settings"]);
-  tabs.push(["login", S.session ? "My Shop" : "Tenant Login"], ["verify","Verify Receipt"]);
-  document.getElementById("tabs").innerHTML = tabs.map(([k,l]) => `<button type="button" data-tab="${k}" ${S.view===k?'aria-current="page"':""}>${l}</button>`).join("");
-}
 function render(){
-  renderTabs();
-  document.getElementById("mkt").textContent = mkName() !== BRAND ? mkName() : "Shop rent management";
-  if (!S.ready){ $app.innerHTML = `<p class="muted">Loading…</p>`; return; }
-  if (["admin","months","invoices","settings"].includes(S.view) && !S.isOwner) S.view = "login";
-  let html = S.view === "admin" ? (S.openUnit ? viewUnitAdmin() : viewAdmin()) : S.view === "months" ? viewMonths() : S.view === "invoices" ? viewInvoices() : S.view === "settings" ? viewSettings() : S.view === "verify" ? viewVerify() : (S.session ? viewTenant() : viewLogin());
-  if (S.dbMissing) html = `<div class="msg info" style="margin-bottom:16px">The database isn't running on this page. Open it on claude.ai while signed in.</div>` + html;
-  $app.innerHTML = html;
-  renderOverlay();
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===view.tab)));
+  if(!db){app.innerHTML=`<div class="panel empty"><h3>Data nahi khul raha</h3><p>Is page ko dekhne ke liye claude.ai par sign in karein, phir page reload karein.</p></div>`;return}
+  if(!isAdmin||view.tab==='tenant')return renderTenant();
+  if(view.tab==='add')return renderAdd();
+  if(view.tab==='settings')return renderSettings();
+  if(view.tab==='invoices')return renderInvoices();
+  if(view.shop)return renderShop();
+  return renderShops();
 }
-const msgHTML = () => S.msg ? `<div class="msg ${S.msg.t}">${esc(S.msg.m)}</div>` : "";
 
-/* ---------- tenant login ---------- */
-function viewLogin(){
-  return `<div class="two">
-    <section class="stack">
-      <span class="eyebrow">For tenants</span>
-      <h1 class="display h1">See your shop account</h1>
-      <p style="margin:0;max-width:52ch">Your landlord has given you a <b>Shop Code</b> (for example RL4821) and a 4-digit <b>PIN</b>. Log in to see every month since your rent started, every payment, invoice and receipt, and to upload a new payment.</p>
-      <p class="hint">Your Shop Code and PIN are yours for life. If you forget them, ask your landlord.</p>
-    </section>
-    <form class="panel stack" id="loginForm" autocomplete="off">
-      <label class="fld">Shop Code<input id="l-code" required placeholder="RL0000" style="text-transform:uppercase;font-family:var(--f-mono);font-size:20px;letter-spacing:.08em"></label>
-      <label class="fld">PIN<input id="l-pin" required inputmode="numeric" maxlength="4" pattern="\\d{4}" placeholder="••••" type="password" style="font-family:var(--f-mono);font-size:20px;letter-spacing:.3em"></label>
-      ${msgHTML()}
-      <button class="btn primary" type="submit" ${S.busy?"disabled":""}>Log in</button>
-    </form>
+function renderShops(){
+  const m=thisMonth();const act=active();
+  let tDue=0,tPaid=0,monthIn=0,pendingMonth=0;
+  act.forEach(s=>{const t=shopTotals(s);tDue+=t.due;tPaid+=t.paid;const e=(s.entries||[]).find(x=>x.month===m);if(e)monthIn+=entryCalc(e).paid;if(!e||entryCalc(e).bal>0)pendingMonth++});
+  const q=norm(view.q);const base=view.showOld?shops.filter(s=>s.closed):act;
+  const list=base.filter(s=>!q||norm(s.shopNo).includes(q)||norm(s.tenant).includes(q)||norm(s.code).includes(q)).sort((a,b)=>String(a.shopNo).localeCompare(String(b.shopNo),undefined,{numeric:true}));
+  const noPin=shops.filter(s=>!s.pin);const oldCount=shops.length-act.length;
+  app.innerHTML=`
+  <div class="spread"><h2>${view.showOld?'Purane karayadar':'Dukanein'}</h2><div class="row">${oldCount?`<button class="btn" id="tglOld">${view.showOld?'Mojooda dukanein':'Purane karayadar ('+oldCount+')'}</button>`:''}<button class="btn pri" id="goAdd">+ Nayi Dukaan</button></div></div>
+  ${noPin.length?`<div class="msg err spread"><span>${noPin.length} dukanon ka PIN abhi nahi bana. PIN ke baghair karayadar apna data nahi dekh sakta.</span><button class="btn sm pri" id="mkPins">Sab ke PIN banayein</button></div>`:''}
+  <div class="grid g4">
+    <div class="stat"><span class="lbl">Mojooda dukanein</span><b>${act.length}</b></div>
+    <div class="stat"><span class="lbl">${esc(monthLabel(m))} wasooli</span><b>${rs(monthIn)}</b></div>
+    <div class="stat"><span class="lbl">Is mahine baqi dukanein</span><b>${pendingMonth}</b></div>
+    <div class="stat due"><span class="lbl">Kul baqaya</span><b>${rs(tDue-tPaid)}</b></div>
+  </div>
+  ${shops.length?`<input id="q" type="search" placeholder="Dukaan number, naam ya code se dhoondein" value="${esc(view.q)}">`:''}
+  ${!loaded?`<div class="panel empty"><h3>Load ho raha hai…</h3></div>`:
+   !shops.length?`<div class="panel empty"><h3>Abhi koi dukaan add nahi hui</h3><p>"Nayi Dukaan" se market ki dukanein add karein. Har dukaan ko pakka code aur PIN milega.</p></div>`:
+   `<div class="tbl-wrap"><table><thead><tr><th>Dukaan #</th><th>Karayadar</th><th>Code</th><th class="num">Mahana kiraya</th><th>${esc(monthLabel(m))}</th><th class="num">Kul baqaya</th></tr></thead><tbody>
+   ${list.map(s=>{const t=shopTotals(s);const e=(s.entries||[]).find(x=>x.month===m);const st=s.closed?['part','Dukaan chhor di']:e?status(e):['due','Nahi likha'];
+     return `<tr class="click" data-code="${esc(s.code)}"><td><b>${esc(s.shopNo)}</b></td><td>${esc(s.tenant)}<div class="muted" style="font-size:13px">${esc(s.phone||'')}</div></td><td><span class="code">${esc(s.code)}</span></td><td class="num">${rs(s.monthlyRent)}</td><td><span class="pill ${st[0]}">${st[1]}</span></td><td class="num" style="${t.bal>0?'color:var(--due);font-weight:600':''}">${rs(t.bal)}</td></tr>`}).join('')}
+   ${!list.length?`<tr><td colspan="6" class="muted">Koi dukaan nahi mili.</td></tr>`:''}
+   </tbody></table></div>`}`;
+  $('#goAdd').onclick=()=>{view.tab='add';render()};
+  const to=$('#tglOld');if(to)to.onclick=()=>{view.showOld=!view.showOld;renderShops()};
+  const mp=$('#mkPins');if(mp)mp.onclick=async()=>{mp.disabled=true;try{for(const s of noPin){const n=clone(s);n.pin=genPin();await saveShop(n)}toast('Sab dukanon ke PIN ban gaye')}catch(e){toast('Nahi hua: '+(e.code||e.message))}refresh()};
+  const qi=$('#q');if(qi){qi.oninput=()=>{view.q=qi.value;const p=qi.selectionStart;renderShops();const n=$('#q');n.focus();n.setSelectionRange(p,p)}}
+  app.querySelectorAll('tr.click').forEach(tr=>tr.onclick=()=>{view.shop=tr.dataset.code;render()});
+}
+
+function newShopDoc(f){return{code:f.code,pin:genPin(),shopNo:f.shopNo,shopKey:norm(f.shopNo),tenant:f.tenant,phone:f.phone||'',cnic:f.cnic||'',monthlyRent:+f.monthlyRent||0,
+  startDate:f.startDate||today(),security:+f.security||0,business:f.business||'',note:f.note||'',entries:[],closed:false,createdAt:new Date().toISOString()}}
+async function freshCode(){let code;for(let i=0;i<8;i++){code=genCode();if(shops.some(s=>s.code===code))continue;const ex=await db.doc('shops/'+code).get();if(!ex.exists)return code}return code}
+
+function renderAdd(){
+  app.innerHTML=`
+  <h2>Nayi Dukaan Add Karein</h2>
+  <p class="muted" style="margin:0;max-width:65ch">Har dukaan sirf ek baar add hoti hai. Add karte hi karayadar ka pakka code aur PIN ban jata hai. Code kabhi nahi badalta. Phir har mahine ka kiraya aur payment usi dukaan mein likhein.</p>
+  <form class="panel grid" id="addForm" style="gap:14px">
+    <div class="grid g2">
+      <label class="f">Dukaan number *<input id="a_no" required placeholder="maslan 12 ya A-07"></label>
+      <label class="f">Karayadar ka naam *<input id="a_tenant" required placeholder="maslan Muhammad Aslam"></label>
+      <label class="f">Mobile number<input id="a_phone" inputmode="tel" placeholder="03xx-xxxxxxx"></label>
+      <label class="f">CNIC<input id="a_cnic" placeholder="xxxxx-xxxxxxx-x"></label>
+      <label class="f">Mahana kiraya (Rs.) *<input id="a_rent" type="number" min="0" step="1" required placeholder="15000"></label>
+      <label class="f">Kiraya shuru tareekh<input id="a_start" type="date" value="${today()}"></label>
+      <label class="f">Security / advance (Rs.)<input id="a_sec" type="number" min="0" step="1" placeholder="0"></label>
+      <label class="f">Karobar<input id="a_biz" placeholder="maslan Kiryana store"></label>
+    </div>
+    <label class="f">Note<textarea id="a_note" placeholder="Koi aur detail"></textarea></label>
+    <div id="addMsg"></div>
+    <div class="row"><button class="btn pri" type="submit" id="addBtn">Dukaan Save Karein</button><button class="btn" type="button" id="addCancel">Wapas</button></div>
+  </form>
+  <div class="panel grid" style="gap:12px"><h3>Poori market ki dukanein ek saath add karein</h3>
+    <p class="muted" style="margin:0;font-size:13.5px;max-width:65ch">Har line mein ek dukaan likhein: <b>Dukaan number, Karayadar naam, Mobile, Mahana kiraya</b>. Jo dukaan pehle se add hai woh dobara add nahi hogi. Har dukaan ko apna code aur PIN milega.</p>
+    <label class="f">Dukanon ki list<textarea id="bulkText" style="min-height:140px;font-family:var(--f-mono);font-size:14px" placeholder="1, Muhammad Aslam, 0300-1111111, 15000&#10;2, Bilal Ahmed, 0301-2222222, 12000&#10;3, Usman Ali, 0333-3333333, 18000"></textarea></label>
+    <div id="bulkMsg"></div>
+    <div class="row"><button class="btn pri" type="button" id="bulkBtn">Sab dukanein add karein</button></div>
   </div>`;
+  $('#addCancel').onclick=()=>{view.tab='shops';render()};
+  $('#bulkBtn').onclick=()=>{const t=$('#bulkText').value;if(!t.trim()){$('#bulkMsg').innerHTML='<div class="msg err">Pehle list likhein.</div>';return}bulkAdd(t,$('#bulkMsg'),$('#bulkBtn'))};
+  $('#addForm').onsubmit=async ev=>{
+    ev.preventDefault();const msg=$('#addMsg');const no=$('#a_no').value.trim();
+    const dup=active().find(s=>norm(s.shopNo)===norm(no));
+    if(dup){msg.innerHTML=`<div class="msg err">Dukaan ${esc(no)} pehle se add hai (karayadar: ${esc(dup.tenant)}, code ${esc(dup.code)}). Ek dukaan sirf ek baar add hoti hai. Agar karayadar badla hai to us dukaan mein "Karayadar ne dukaan chhor di" dabayein, phir naya add karein.</div>`;return}
+    const btn=$('#addBtn');btn.disabled=true;btn.textContent='Save ho raha hai…';
+    try{
+      const s=newShopDoc({code:await freshCode(),shopNo:no,tenant:$('#a_tenant').value.trim(),phone:$('#a_phone').value.trim(),cnic:$('#a_cnic').value.trim(),
+        monthlyRent:$('#a_rent').value,startDate:$('#a_start').value,security:$('#a_sec').value,business:$('#a_biz').value.trim(),note:$('#a_note').value.trim()});
+      await saveShop(s);view.tab='shops';view.shop=s.code;refresh();toast('Dukaan add ho gayi. Code '+s.code+', PIN '+s.pin);
+    }catch(e){btn.disabled=false;btn.textContent='Dukaan Save Karein';msg.innerHTML=`<div class="msg err">Save nahi hua (${esc(e.code||e.message)}). Dobara koshish karein.</div>`}
+  };
 }
-async function doLogin(code, pin){
-  S.busy = true; S.msg = null; render();
-  try {
-    if (!S.db) throw {m:"Database unavailable. Open the page while signed in."};
-    const a = await S.db.doc("auth/"+code).get();
-    if (!a.exists) throw {m:"This Shop Code was not found. Check it and try again."};
-    const h = await hashPin(code, pin), d = a.data();
-    if (h.alg !== d.alg || h.h !== d.h) throw {m:"Wrong PIN. Try again or ask your landlord."};
-    S.session = code; store.set(SESSION_KEY, code); subscribeMine();
-  } catch(e){ setMsg("err", errText(e)); }
-  S.busy = false; render();
-}
-function subscribeMine(){
-  S.myUnsub?.(); S.myUnit = null;
-  if (!S.db || !S.session) return;
-  S.myUnsub = S.db.doc("units/"+S.session).onSnapshot(snap => { S.myUnit = snap.exists ? {id:snap.id, ...snap.data()} : false; if (!fieldsBusy()) render(); }, () => {});
+async function bulkAdd(text,msgEl,btn){
+  const lines=text.split(/\n/).map(l=>l.trim()).filter(Boolean);
+  const seen=new Set(active().map(s=>norm(s.shopNo)));let added=[],skipped=[],bad=[];
+  btn.disabled=true;btn.textContent='Add ho rahi hain…';
+  for(const l of lines){
+    const p=l.split(/[,\t]/).map(x=>x.trim());
+    const no=p[0],tenant=p[1],phone=p[2]||'',rent=String(p[3]||'').replace(/[^0-9.]/g,'');
+    if(!no||!tenant){bad.push(l);continue}
+    if(seen.has(norm(no))){skipped.push(no);continue}
+    try{const s=newShopDoc({code:await freshCode(),shopNo:no,tenant,phone,monthlyRent:rent});await saveShop(s);shops.push(s);seen.add(norm(no));added.push(no)}catch(e){bad.push(l)}
+  }
+  btn.disabled=false;btn.textContent='Sab dukanein add karein';
+  msgEl.innerHTML=`<div class="msg ${added.length?'ok':'err'}">${added.length} dukanein add ho gayin${added.length?': '+esc(added.join(', ')):''}.${skipped.length?`<br>Pehle se mojood, chhor di gayin: ${esc(skipped.join(', '))}.`:''}${bad.length?`<br>Yeh lines samajh nahi aayin: ${esc(bad.join(' | '))}`:''}</div>`;
+  if(added.length)$('#bulkText').value='';
 }
 
-/* ---------- tenant dashboard ---------- */
-function viewTenant(){
-  const u = S.myUnit;
-  if (u === null) return `<p class="muted">Loading your shop record…</p>`;
-  if (u === false || (u.status !== "occupied" && u.status !== "left")) return `<div class="empty"><h3>Record not found</h3><p class="muted">This shop is no longer registered to you. Contact your landlord.</p><button type="button" class="btn" data-logout>Log out</button></div>`;
-  const c = calc(u);
-  const ledger = [...(u.payments||[])].sort((a,b)=> sortKey(b).localeCompare(sortKey(a)));
-  const seen = seenSet(u.id);
-  const fresh = (u.payments||[]).filter(p => p.by==="tenant" && (p.status==="confirmed"||p.status==="rejected") && p.confirmedAt && !seen.has(p.id));
-  const receipts = (u.payments||[]).filter(p => p.status==="confirmed" || !p.status).length;
-  return `<div class="row between" style="margin-bottom:16px">
-      <div><span class="eyebrow">${esc(u.floor||"")} · Your Shop Code <span class="mono">${esc(u.id)}</span></span><h1 class="display h1">${esc(u.shopNo)}</h1><div class="muted">${esc(u.tenant)}${u.business?" · "+esc(u.business):""}</div></div>
-      <div class="row"><button type="button" class="btn" data-csv="mine">Download full statement</button><button type="button" class="btn" data-logout>Log out</button></div>
-    </div>
-    ${S.msg?`<div style="margin-bottom:16px">${msgHTML()}</div>`:""}
-    ${fresh.length?`<div class="newrcpt" style="margin-bottom:16px"><strong>Your landlord has reviewed your payment</strong>${fresh.map(p=>`<div class="row between"><span>${esc(reasonOf(p))} · ${rs(p.amount)} · ${monLabel(p.month)} — ${p.status==="confirmed"?`<strong>Approved</strong>${p.rcptNo?` · <span class="code">${esc(p.rcptNo)}</span>`:""}`:`<strong style="color:var(--danger)">Rejected</strong>${p.rejectReason?" ("+esc(p.rejectReason)+")":""}`}</span>${p.status==="confirmed"?`<button type="button" class="btn sm primary" data-rcpt="${esc(u.id)}|${esc(p.id)}" data-seen="${esc(p.id)}">View receipt</button>`:`<button type="button" class="btn sm" data-seen="${esc(p.id)}">OK</button>`}</div>`).join("")}</div>`:""}
-    ${u.status==="left"?`<div class="msg info" style="margin-bottom:16px">You left this shop on ${fmtD(u.endDate)}. Your Shop Code and PIN stay the same, so you can see your full account at any time.</div>`:""}
-    <div class="stats" style="margin-bottom:20px">
-      <div class="stat"><b>${c.months.length}</b><span>Months since ${fmtD(u.startDate)}</span></div>
-      <div class="stat"><b>Rs ${num(c.expected)}</b><span>Total rent to date</span></div>
-      <div class="stat"><b>Rs ${num(c.paid)}</b><span>Total paid towards rent</span></div>
-      <div class="stat ${c.balance?"alert":""}"><b>Rs ${num(c.balance)}</b><span>${c.advance?`Advance ${rsT(c.advance)}`:"Balance"}</span></div>
-      <div class="stat"><b>${receipts}</b><span>Receipts</span></div>
-    </div>
-    <div class="two">
-      <section class="stack">
-        <div class="big-due ${c.balance?"":"clear"}">
-          <span class="eyebrow">${c.balance?"Total rent outstanding":"Nothing outstanding"}</span>
-          <span class="amt">Rs ${num(c.balance)}</span>
-          <span style="font-size:14px">${c.balance?`Rent not fully paid for ${c.unpaidMonths} month${c.unpaidMonths===1?"":"s"}`:c.advance?`${rsT(c.advance)} paid in advance`:"Thank you, your account is clear"}</span>
-        </div>
-        <div class="panel"><dl class="kv">
-          <dt>Monthly rent</dt><dd>${rs(u.rent)}</dd>
-          <dt>Due date</dt><dd>By the ${esc(u.dueDay||5)}th of each month</dd>
-          <dt>This month (${monLabel(curMonth())})</dt><dd><span class="pill ${c.cur.k}">${esc(c.cur.t)}</span></dd>
-          <dt>Rent started</dt><dd>${fmtD(u.startDate)}</dd>
-          ${u.endDate?`<dt>Left on</dt><dd>${fmtD(u.endDate)}</dd>`:""}
-          <dt>Months fully paid</dt><dd>${c.paidMonths} of ${c.months.length}</dd>
-          <dt>Total money received</dt><dd>${rs(c.received)}</dd>
-          ${c.other?`<dt>Paid towards other charges</dt><dd>${rs(c.other)}</dd>`:""}
-          ${u.deposit?`<dt>Security deposit</dt><dd>${rs(u.deposit)}</dd>`:""}
-          <dt>Shop Code (for life)</dt><dd class="mono">${esc(u.id)}</dd>
-        </dl></div>
-        ${u.status==="left"?"":payBox()}
-        ${u.status==="left"?"":`<form class="panel stack" id="claimForm">
-          <h2 class="display h3">Upload a payment</h2>
-          <p class="hint" style="margin:0">Made a payment? Upload a photo of the receipt or a screenshot here. As soon as the landlord approves it, your receipt with its own number and verification code appears here.</p>
-          <div class="fgrid">
-            <label class="fld">For month<select id="c-month">${[...c.months].reverse().map(k=>`<option value="${k}" ${k===curMonth()?"selected":""}>${monLabel(k)}</option>`).join("")}</select></label>
-            <label class="fld">Amount (Rs)<input id="c-amount" type="number" min="1" required value="${esc(u.rent)}"></label>
-            <label class="fld">Method<select id="c-method">${methodNames().map(m=>`<option>${esc(m)}</option>`).join("")}</select></label>
-            <label class="fld">Purpose (what it's for)<select id="c-reason">${REASONS.map(r=>`<option>${r}</option>`).join("")}</select></label>
-            <label class="fld full">Payment proof (photo / screenshot)<input id="c-proof" type="file" accept="image/*" required><span class="hint">The image is resized automatically.</span></label>
-            <label class="fld full">Reference / note<input id="c-note" maxlength="120" placeholder="e.g. JazzCash TID 1234567"></label>
-          </div>
-          <p class="hint" style="margin:0">The date and time are recorded automatically when you send.</p>
-          <button class="btn gold" type="submit" ${S.busy?"disabled":""}>${S.busy?"Uploading…":"Upload proof and send"}</button>
-        </form>`}
-      </section>
-      <section class="stack">
-        <h2 class="display h2">Full account · ${monLabel(c.months[0])} to now</h2>
-        ${fullHistory(u,c)}
-        <h2 class="display h2">My receipts</h2>
-        ${receiptList(u)}
-        <h2 class="display h2">My invoices</h2>
-        ${invoiceList(u,c)}
-        <h2 class="display h2">All payments</h2>
-        ${ledgerTable(ledger, false, u)}
-        <form class="panel stack" id="tenantInfo">
-          <h2 class="display h3">My details</h2>
-          <div class="fgrid">
-            <label class="fld">Mobile number<input id="t-phone" type="tel" value="${esc(u.phone)}"></label>
-            <label class="fld">Business<input id="t-business" value="${esc(u.business)}" placeholder="e.g. Mobile repair"></label>
-          </div>
-          <button class="btn" type="submit" ${S.busy?"disabled":""}>Save</button>
-        </form>
-      </section>
-    </div>`;
+function tenantMsg(s){const t=shopTotals(s);return `Assalam o Alaikum ${s.tenant},\n${settings.marketName||'Market'} — Dukaan ${s.shopNo}\n\nAap ka karayadar code: ${s.code}\nAap ka PIN: ${s.pin}\n\nIs code aur PIN se aap apna poora kiraya record aur invoice dekh sakte hain.\nAbhi baqaya: ${rs(t.bal)}${pms().length?'\n\nKiraya jama karwane ke liye:\n'+pms().map(p=>`${p.title}: ${p.number}${p.holder?' ('+p.holder+')':''}`).join('\n'):''}`}
+
+function renderShop(){
+  const s=shops.find(x=>x.code===view.shop);
+  if(!s){view.shop=null;return renderShops()}
+  const t=shopTotals(s);const entries=sortE(s);
+  const editing=view.editEntry?entries.find(e=>e.month===view.editEntry):null;
+  const def=editing||{month:thisMonth(),rent:s.monthlyRent,extra:0,extraNote:'',note:''};
+  const openBills=entries.filter(e=>entryCalc(e).bal>0);
+  const payFor=view.payMonth&&entries.find(e=>e.month===view.payMonth)?view.payMonth:(openBills[openBills.length-1]||entries[0]||{}).month;
+  const payDef=payFor?Math.max(entryCalc(entries.find(e=>e.month===payFor)).bal,0):0;
+  app.innerHTML=`
+  <button class="back" id="back">← Sab dukanein</button>
+  ${s.closed?`<div class="msg err">Is karayadar ne ${esc(s.closedAt||'')} ko dukaan chhor di. Is ka poora record mehfooz hai aur woh code + PIN se ab bhi dekh sakta hai.</div>`:''}
+  <div class="spread"><div><span class="lbl">Dukaan</span><h2>${esc(s.shopNo)} · ${esc(s.tenant)}</h2></div>
+    <div class="row"><div><span class="lbl">Code</span><div><span class="code big">${esc(s.code)}</span></div></div><div><span class="lbl">PIN</span><div><span class="code big" style="letter-spacing:.2em">${esc(s.pin||'—')}</span></div></div></div></div>
+  <div class="row"><button class="btn sm" id="cpMsg">Code + PIN ka message copy</button><button class="btn sm" id="newPin">${view.pinArm?'Haan, naya PIN banayein':'PIN badlein'}</button><span class="muted" style="font-size:13px">Code kabhi nahi badalta. PIN zarurat par badal sakte hain.</span></div>
+  <div class="grid g4">
+    <div class="stat"><span class="lbl">Mahana kiraya</span><b>${rs(s.monthlyRent)}</b></div>
+    <div class="stat"><span class="lbl">Kul banta hai</span><b>${rs(t.due)}</b></div>
+    <div class="stat"><span class="lbl">Kul jama</span><b>${rs(t.paid)}</b></div>
+    <div class="stat ${t.bal>0?'due':''}"><span class="lbl">Baqaya</span><b>${rs(t.bal)}</b></div>
+  </div>
+  <div class="panel">
+    <div class="spread" style="margin-bottom:12px"><h3>Dukaan ki detail</h3><button class="btn sm" id="editInfo">${view.editInfo?'Band karein':'Detail badlein'}</button></div>
+    ${view.editInfo?`<form id="infoForm" class="grid" style="gap:12px"><div class="grid g2">
+      <label class="f">Karayadar ka naam<input id="i_tenant" value="${esc(s.tenant)}" required></label>
+      <label class="f">Mobile<input id="i_phone" value="${esc(s.phone)}"></label>
+      <label class="f">CNIC<input id="i_cnic" value="${esc(s.cnic)}"></label>
+      <label class="f">Mahana kiraya (Rs.)<input id="i_rent" type="number" min="0" value="${esc(s.monthlyRent)}"></label>
+      <label class="f">Security (Rs.)<input id="i_sec" type="number" min="0" value="${esc(s.security||0)}"></label>
+      <label class="f">Karobar<input id="i_biz" value="${esc(s.business)}"></label></div>
+      <label class="f">Note<textarea id="i_note">${esc(s.note)}</textarea></label>
+      <div class="row"><button class="btn pri" type="submit">Detail save karein</button></div></form>`:
+    `<div class="kv">
+      <div><span class="lbl">Mobile</span><span>${esc(s.phone||'—')}</span></div>
+      <div><span class="lbl">CNIC</span><span>${esc(s.cnic||'—')}</span></div>
+      <div><span class="lbl">Karobar</span><span>${esc(s.business||'—')}</span></div>
+      <div><span class="lbl">Shuru tareekh</span><span>${esc(s.startDate||'—')}</span></div>
+      <div><span class="lbl">Security</span><span>${rs(s.security||0)}</span></div>
+      <div><span class="lbl">Note</span><span>${esc(s.note||'—')}</span></div></div>`}
+  </div>
+  <div class="grid g2" style="align-items:start">
+  <form class="panel grid" id="entryForm" style="gap:12px">
+    <div class="spread"><h3>${editing?'Bill badlein: '+esc(monthLabel(editing.month)):'1. Mahine ka kiraya (bill) likhein'}</h3>${editing?'<button class="btn sm" type="button" id="cancelEdit">Naya likhein</button>':''}</div>
+    <label class="f">Mahina<input id="e_month" type="month" value="${esc(def.month)}" ${editing?'disabled':''} required></label>
+    <label class="f">Kiraya (Rs.)<input id="e_rent" type="number" min="0" value="${esc(def.rent)}" required></label>
+    <label class="f">Bijli / pani / deegar (Rs.)<input id="e_extra" type="number" min="0" value="${esc(def.extra||0)}"></label>
+    <label class="f">Deegar ki tafseel<input id="e_extraNote" value="${esc(def.extraNote||'')}" placeholder="maslan Bijli bill"></label>
+    <label class="f">Note<input id="e_note" value="${esc(def.note||'')}"></label>
+    <div id="entryMsg"></div>
+    <div class="row"><button class="btn pri" type="submit" id="entryBtn">${editing?'Tabdeeli save karein':'Bill save karein'}</button></div>
+  </form>
+  <form class="panel grid" id="payForm" style="gap:12px">
+    <h3>2. Payment jama karein</h3>
+    ${entries.length?`
+    <label class="f">Kis mahine ki payment<select id="p_month">${entries.map(e=>{const c=entryCalc(e);return `<option value="${esc(e.month)}" ${e.month===payFor?'selected':''}>${esc(monthLabel(e.month))} — baqi ${rs(Math.max(c.bal,0))}</option>`}).join('')}</select></label>
+    <label class="f">Raqam (Rs.)<input id="p_amt" type="number" min="1" value="${esc(payDef||'')}" required></label>
+    <label class="f">Tareeqa<select id="p_method">${methodOptions().map(m=>`<option>${esc(m)}</option>`).join('')}</select></label>
+    <label class="f">Transaction ID / reference<input id="p_ref" placeholder="maslan JazzCash TID"></label>
+    <label class="f">Tareekh<input id="p_date" type="date" value="${today()}"></label>
+    <div id="payMsg"></div>
+    <div class="row"><button class="btn pri" type="submit" id="payBtn">Payment jama karein</button></div>`
+    :`<p class="muted" style="margin:0">Pehle baen taraf se mahine ka bill likhein, phir yahan payment jama karein.</p>`}
+  </form>
+  </div>
+  <div class="spread"><h3>Poori umar ka kiraya record</h3><span class="muted">${entries.length} mahine · kabhi delete nahi hota</span></div>
+  ${entries.length?entryTable(s,entries,true):`<div class="panel empty"><h3>Abhi koi mahina nahi likha</h3><p>Upar se is mahine ka bill likhein.</p></div>`}
+  ${!s.closed?`<div class="panel spread"><div><h3>Karayadar ne dukaan chhor di?</h3><p class="muted" style="margin:4px 0 0">Record mehfooz rahega, sirf dukaan khaali ho jayegi aur us par naya karayadar add ho sakega.</p></div><button class="btn danger" id="closeShop">${view.confirmClose?'Haan, dukaan khaali karein':'Karayadar ne dukaan chhor di'}</button></div>`:''}`;
+  $('#back').onclick=()=>{Object.assign(view,{shop:null,editEntry:null,editInfo:false,confirmClose:false,pinArm:false,payMonth:null});render()};
+  $('#cpMsg').onclick=()=>copy(tenantMsg(s));
+  $('#newPin').onclick=async()=>{if(!view.pinArm){view.pinArm=true;renderShop();return}view.pinArm=false;const n=clone(s);n.pin=genPin();try{await saveShop(n,{oldPin:s.pin});toast('Naya PIN: '+n.pin+'. Karayadar ko bata dein.')}catch(e){toast('Nahi hua: '+(e.code||e.message))}refresh()};
+  $('#editInfo').onclick=()=>{view.editInfo=!view.editInfo;renderShop()};
+  const inf=$('#infoForm');if(inf)inf.onsubmit=async ev=>{ev.preventDefault();const n=clone(s);Object.assign(n,{tenant:$('#i_tenant').value.trim(),phone:$('#i_phone').value.trim(),cnic:$('#i_cnic').value.trim(),monthlyRent:+$('#i_rent').value||0,security:+$('#i_sec').value||0,business:$('#i_biz').value.trim(),note:$('#i_note').value.trim()});
+    try{await saveShop(n);view.editInfo=false;toast('Detail save ho gayi')}catch(e){toast('Save nahi hua: '+(e.code||e.message))}refresh()};
+  const ce=$('#cancelEdit');if(ce)ce.onclick=()=>{view.editEntry=null;renderShop()};
+  $('#entryForm').onsubmit=async ev=>{
+    ev.preventDefault();const msg=$('#entryMsg');const month=editing?editing.month:$('#e_month').value;
+    if(!month){msg.innerHTML='<div class="msg err">Mahina chunein.</div>';return}
+    if(!editing&&(s.entries||[]).some(e=>e.month===month)){msg.innerHTML=`<div class="msg err">${esc(monthLabel(month))} ka bill pehle se likha hai. Record mein "Bill badlein" dabayein.</div>`;return}
+    const n=clone(s);const old=(n.entries||[]).find(e=>e.month===month);
+    const e={...(old||{payments:[]}),month,rent:+$('#e_rent').value||0,extra:+$('#e_extra').value||0,extraNote:$('#e_extraNote').value.trim(),note:$('#e_note').value.trim()};
+    n.entries=(n.entries||[]).filter(x=>x.month!==month);n.entries.push(e);
+    $('#entryBtn').disabled=true;
+    try{await saveShop(n);view.editEntry=null;view.payMonth=month;toast(monthLabel(month)+' ka bill save ho gaya')}catch(er){toast('Save nahi hua: '+(er.code||er.message))}refresh()};
+  const pf=$('#payForm');const pm=$('#p_month');
+  if(pm)pm.onchange=()=>{view.payMonth=pm.value;const e=entries.find(x=>x.month===pm.value);$('#p_amt').value=Math.max(entryCalc(e).bal,0)||''};
+  if(pm)pf.onsubmit=async ev=>{ev.preventDefault();const amt=+$('#p_amt').value;if(!(amt>0)){$('#payMsg').innerHTML='<div class="msg err">Raqam likhein.</div>';return}
+    const n=clone(s);const e=n.entries.find(x=>x.month===pm.value);e.payments=payList(e);const np={id:uid(),amount:amt,method:$('#p_method').value,ref:$('#p_ref').value.trim(),date:$('#p_date').value||today()};e.payments.push(np);
+    $('#payBtn').disabled=true;try{await saveShop(n);toast(rs(amt)+' jama ho gaye ('+monthLabel(e.month)+')');refresh();openReceipt(n,e,np);return}catch(er){toast('Save nahi hua: '+(er.code||er.message))}refresh()};
+  bindEntryTable(s);
+  app.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{view.editEntry=b.dataset.edit;renderShop();$('#entryForm').scrollIntoView({block:'start'})});
+  app.querySelectorAll('[data-undo]').forEach(b=>b.onclick=async()=>{
+    if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Pakka?';setTimeout(()=>{if(b.isConnected){b.dataset.armed='';b.textContent='Ghalat'}},3000);return}
+    const[mo,pid]=b.dataset.undo.split('|');const n=clone(s);const e=n.entries.find(x=>x.month===mo);const p=payList(e).find(x=>x.id===pid);if(p){p.void=true;p.amountWas=p.amount;p.amount=0}
+    try{await saveShop(n);toast('Payment ghalat mark ho gayi (record mein rahegi)')}catch(er){toast('Nahi hua')}refresh()});
+  const cs=$('#closeShop');if(cs)cs.onclick=async()=>{if(!view.confirmClose){view.confirmClose=true;renderShop();return}
+    const n=clone(s);n.closed=true;n.closedAt=today();try{await saveShop(n);view.confirmClose=false;toast('Dukaan khaali. Record mehfooz hai.')}catch(e){toast('Nahi hua: '+(e.code||e.message))}refresh()};
 }
-function ledgerTable(list, admin, u){
-  if (!list.length) return `<div class="empty"><p class="muted">No payments recorded yet.</p></div>`;
-  return `<div class="tbl-wrap"><table class="wide"><thead><tr><th>Paid (date &amp; time)</th><th>Receipt no.</th><th>For month</th><th>Purpose</th><th class="num">Amount</th><th class="num">To rent</th><th>Method</th><th>Proof</th><th>Status</th><th></th>${admin?"<th></th>":""}</tr></thead><tbody>
-  ${list.map(p => `<tr><td class="mono" style="font-size:13px">${esc(fmtWhen(p))}</td><td class="code" style="font-size:12px">${esc(p.rcptNo||"—")}</td><td>${monLabel(p.month)}</td><td>${esc(reasonOf(p))}${p.deductAmt&&isRentReason(p)?`<div class="hint">Deducted ${rsT(p.deductAmt)}: ${esc(p.deductReason||"")}</div>`:""}</td><td class="num">${rs(p.amount)}</td><td class="num">${p.status==="confirmed"||!p.status?rs(credit(p)):"—"}</td><td>${esc(p.method)}${p.note?`<div class="hint">${esc(p.note)}</div>`:""}</td><td>${p.hasProof?proofImg(p):'<span class="hint">—</span>'}</td>
-    <td>${p.status==="pending"?'<span class="pill warn">Awaiting approval</span>':p.status==="rejected"?`<span class="pill bad">Rejected</span>${p.rejectReason?`<div class="hint">${esc(p.rejectReason)}</div>`:""}`:'<span class="pill ok">Received</span>'}</td>
-    <td>${p.status==="rejected"||p.status==="pending"?"":`<button type="button" class="btn sm" data-rcpt="${esc(u.id)}|${esc(p.id)}">Receipt</button>`}</td>
-    ${admin?`<td>${S.confirm?.kind==="pay"&&S.confirm.id===p.id?`<div class="inline-confirm">Delete? The receipt number will be marked cancelled. <button type="button" class="btn sm danger solid" data-del-pay="${esc(p.id)}">Yes</button><button type="button" class="btn sm" data-cancel>No</button></div>`:`<button type="button" class="btn sm danger" data-ask="pay:${esc(p.id)}">Delete</button>`}</td>`:""}</tr>`).join("")}
+
+function entryTable(s,entries,owner){
+  return `<div class="tbl-wrap"><table><thead><tr><th>Mahina</th><th class="num">Kiraya</th><th class="num">Deegar</th><th class="num">Kul</th><th class="num">Jama</th><th class="num">Baqi</th><th>Halat</th><th></th></tr></thead><tbody>
+  ${entries.map(e=>{const c=entryCalc(e);const st=status(e);const ps=payList(e);
+    return `<tr><td><b>${esc(monthLabel(e.month))}</b>${e.note?`<div class="muted" style="font-size:12.5px">${esc(e.note)}</div>`:''}</td><td class="num">${rs(e.rent)}</td><td class="num">${rs(e.extra)}${e.extraNote?`<div class="muted" style="font-size:12.5px">${esc(e.extraNote)}</div>`:''}</td><td class="num">${rs(c.due)}</td><td class="num">${rs(c.paid)}</td><td class="num">${rs(Math.max(c.bal,0))}</td><td><span class="pill ${st[0]}">${st[1]}</span></td>
+    <td><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm pri" data-inv="${esc(e.month)}">Invoice</button>${owner?`<button class="btn sm" data-edit="${esc(e.month)}">Bill badlein</button>`:''}</div></td></tr>
+    ${ps.length||(+e.paid)?`<tr><td colspan="8" style="background:var(--sunk);padding:8px 12px 10px 28px"><span class="lbl">Payments</span>
+      ${(+e.paid)?`<div style="font-size:13.5px">${rs(e.paid)} · pehle se likha</div>`:''}
+      ${ps.map(p=>`<div class="row" style="gap:10px;font-size:13.5px;${p.void?'text-decoration:line-through;color:var(--muted)':''}"><b>${rs(p.void?p.amountWas:p.amount)}</b><span>${esc(p.date)}</span><span>${esc(p.method)}</span>${p.ref?`<span class="code" style="font-size:12px">${esc(p.ref)}</span>`:''}${p.void?'<span>(ghalat, cancel)</span>':''}${!p.void?`<button class="btn sm" data-rcp="${esc(e.month)}|${esc(p.id)}">Raseed</button>`:''}${owner&&!p.void?`<button class="btn sm danger" data-undo="${esc(e.month)}|${esc(p.id)}">Ghalat</button>`:''}</div>`).join('')}
+    </td></tr>`:''}`}).join('')}
+  ${entries.length>1?(()=>{const t=shopTotals(s);return `<tr><td><b>Kul</b></td><td></td><td></td><td class="num"><b>${rs(t.due)}</b></td><td class="num"><b>${rs(t.paid)}</b></td><td class="num" style="${t.bal>0?'color:var(--due)':''}"><b>${rs(t.bal)}</b></td><td colspan="2"></td></tr>`})():''}
   </tbody></table></div>`;
 }
-async function tenantUpdate(fn, okMsg){
-  const u = S.myUnit; if (!u) return;
-  S.busy = true; S.msg = null; render();
-  try { const fresh = await S.db.doc("units/"+u.id).get(); const patch = fn(fresh.data()); await write(()=>S.db.doc("units/"+u.id).update(patch)); setMsg("ok", okMsg); }
-  catch(e){ setMsg("err", errText(e)); }
-  S.busy = false; render();
+function bindEntryTable(s){app.querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>openInvoice(s,s.entries.find(e=>e.month===b.dataset.inv)));
+  app.querySelectorAll('[data-rcp]').forEach(b=>b.onclick=()=>{const[mo,pid]=b.dataset.rcp.split('|');const e=s.entries.find(x=>x.month===mo);openReceipt(s,e,payList(e).find(x=>x.id===pid))})}
+
+function renderSettings(){
+  const list=pms().map(p=>({...p}));let draft=null;
+  const draw=()=>{
+  app.innerHTML=`<h2>Market Settings</h2>
+  <form class="panel grid" id="setForm" style="gap:14px"><h3>Market ki maloomat</h3><div class="grid g2">
+    <label class="f">Market ka naam<input id="s_name" value="${esc(draft?draft.marketName:settings.marketName)}" placeholder="maslan Al-Madina Market"></label>
+    <label class="f">Malik ka naam<input id="s_owner" value="${esc(draft?draft.ownerName:settings.ownerName)}"></label>
+    <label class="f">Rabta number<input id="s_phone" value="${esc(draft?draft.phone:settings.phone)}"></label>
+    <label class="f">Pata<input id="s_addr" value="${esc(draft?draft.address:settings.address)}" placeholder="maslan G-9 Markaz, Islamabad"></label></div>
+    <h3 style="margin-top:6px">Payment methods (kiraya kahan jama ho)</h3>
+    <p class="muted" style="margin:0;font-size:13.5px">Bank account, JazzCash ya Easypaisa number daalein. Yeh karayadar ke page aur invoice par aayenge, aur payment jama karte waqt "Tareeqa" mein bhi.</p>
+    <div class="grid" style="gap:10px">${list.map((p,i)=>`<div class="pm-row">
+      <label class="f">Naam<input data-pm="${i}" data-k="title" value="${esc(p.title)}" placeholder="maslan Meezan Bank / JazzCash"></label>
+      <label class="f">Account / number<input data-pm="${i}" data-k="number" value="${esc(p.number)}" placeholder="maslan 0300-1234567 ya IBAN"></label>
+      <label class="f">Account holder<input data-pm="${i}" data-k="holder" value="${esc(p.holder)}" placeholder="maslan Ahmed Khan"></label>
+      <button class="btn danger" type="button" data-pmdel="${i}">Hatayein</button></div>`).join('')||'<p class="muted" style="margin:0">Abhi koi payment method nahi. Neeche button se add karein.</p>'}</div>
+    <div class="row"><button class="btn" type="button" id="pmAdd">+ Payment method</button></div>
+    <div class="row"><button class="btn pri" type="submit">Sab save karein</button></div></form>`;
+  app.querySelectorAll('[data-pm]').forEach(inp=>inp.oninput=()=>{list[+inp.dataset.pm][inp.dataset.k]=inp.value});
+  const keep=()=>{draft={marketName:$('#s_name').value,ownerName:$('#s_owner').value,phone:$('#s_phone').value,address:$('#s_addr').value}};
+  $('#pmAdd').onclick=()=>{keep();list.push({title:'',number:'',holder:''});draw()};
+  app.querySelectorAll('[data-pmdel]').forEach(b=>b.onclick=()=>{keep();list.splice(+b.dataset.pmdel,1);draw()});
+  $('#setForm').onsubmit=async ev=>{ev.preventDefault();const d={marketName:$('#s_name').value.trim(),ownerName:$('#s_owner').value.trim(),phone:$('#s_phone').value.trim(),address:$('#s_addr').value.trim(),
+    payMethods:list.map(p=>({title:(p.title||'').trim(),number:(p.number||'').trim(),holder:(p.holder||'').trim()})).filter(p=>p.title||p.number)};
+    try{await db.doc('meta/settings').set(d);settings=d;applySettings();toast('Settings save ho gayin');renderSettings()}catch(e){toast('Save nahi hua: '+(e.code||e.message))}};
+  };draw();
 }
 
-/* ---------- landlord desk ---------- */
-function viewAdmin(){
-  const units = S.units.filter(u => u.status !== "left");
-  const oldies = S.units.filter(u => u.status === "left");
-  const occ = units.filter(u => u.status === "occupied");
-  const cs = occ.map(u => [u, calc(u)]).filter(([,c]) => c);
-  const cm = curMonth();
-  const dueThis = cs.filter(([,c]) => c.months.includes(cm)).reduce((s,[,c])=>s+c.rent,0);
-  const gotThis = cs.reduce((s,[,c])=>s+Math.min(c.rent, c.byMonth[cm]||0),0);
-  const totalDue = cs.reduce((s,[,c])=>s+c.balance,0);
-  const late = cs.filter(([,c]) => c.cur.k === "bad").length;
-  const claims = occ.flatMap(u => (u.payments||[]).filter(p=>p.status==="pending").map(p=>({u,p})));
-  const lc = S.lastCreated;
-  const rows = (S.filter==="left" ? oldies : units).filter(u => S.filter==="all" || S.filter==="left" || (S.filter==="vacant" ? u.status!=="occupied" : S.filter==="due" ? (calc(u)?.balance>0) : u.status==="occupied"))
-    .sort((a,b)=> String(a.shopNo).localeCompare(String(b.shopNo), undefined, {numeric:true}));
-  return `<div style="margin-bottom:16px"><span class="eyebrow">Only you can see this · ${monLabel(cm)}</span><h1 class="display h1">Rent Desk</h1></div>
-    <div class="stats" style="margin-bottom:20px">
-      <div class="stat"><b>${units.length}</b><span>Shops · ${occ.length} rented, ${units.length-occ.length} vacant</span></div>
-      <div class="stat"><b>Rs ${num(gotThis)}</b><span>Collected this month / ${rsT(dueThis)}</span></div>
-      <div class="stat ${totalDue?"alert":""}"><b>Rs ${num(totalDue)}</b><span>Total outstanding</span></div>
-      <div class="stat ${late?"alert":""}"><b>${late}</b><span>Late this month</span></div>
-    </div>
-    ${S.msg?`<div style="margin-bottom:16px">${msgHTML()}</div>`:""}
-    ${claims.length?`<section class="panel stack" style="margin-bottom:20px;border-color:var(--marigold)"><h2 class="display h3">Payments uploaded by tenants (${claims.length})</h2>
-      <p class="hint" style="margin:0">Check the proof, decide how much goes to rent and how much is deducted for something else, then approve. The tenant gets a numbered receipt with a verification code immediately.</p>
-      <div>${claims.map(({u,p}) => { const key = esc(u.id)+"|"+esc(p.id); const rentDefault = isRentReason(p) ? (Number(p.amount)||0) : 0;
-        return `<div class="claim-card">
-        <div>${proofImg(p)}</div>
-        <div class="stack" style="gap:8px">
-          <div class="row between"><div><strong>${esc(u.shopNo)}</strong> · ${esc(u.tenant)}<div class="hint">${monLabel(p.month)} · ${esc(p.method)} · ${esc(fmtWhen(p))}${p.note?" · "+esc(p.note):""}</div></div>
-            <div><span class="pill warn">${esc(reasonOf(p))}</span> <strong>${rs(p.amount)}</strong></div></div>
-          <div class="approve-box">
-            <label class="fld">Credit to rent (Rs)<input id="ap-rent-${esc(p.id)}" type="number" min="0" value="${rentDefault}"></label>
-            <label class="fld">Deduct (Rs)<input id="ap-ded-${esc(p.id)}" type="number" min="0" value="${(Number(p.amount)||0) - rentDefault}"></label>
-            <label class="fld">Reason for deduction / other charge<input id="ap-why-${esc(p.id)}" value="${isRentReason(p)?"":esc(p.reason)}" placeholder="e.g. Electricity bill"></label>
-          </div>
-          <div class="row"><button type="button" class="btn sm primary" data-approve="${key}">Approve and issue receipt</button>
-            <input id="ap-rej-${esc(p.id)}" placeholder="Reason for rejecting (optional)" style="border:1.5px solid var(--line);border-radius:8px;padding:5px 10px;min-width:0;flex:1;font-size:13px">
-            <button type="button" class="btn sm danger" data-reject="${key}">Reject</button></div>
-        </div></div>`; }).join("")}</div></section>`:""}
-    <div class="two" style="margin-bottom:28px">
-      <form class="panel stack" id="addForm" autocomplete="off">
-        <h2 class="display h2">Add a new shop</h2>
-        <div class="fgrid">
-          <label class="fld">Shop number<input id="f-shopNo" required maxlength="30" placeholder="Shop 12"></label>
-          <label class="fld">Floor<select id="f-floor">${FLOORS.map(f=>`<option>${f}</option>`).join("")}</select></label>
-          <label class="fld">Monthly rent (Rs)<input id="f-rent" type="number" min="0" required placeholder="25000"></label>
-          <label class="fld">Security deposit (Rs)<input id="f-deposit" type="number" min="0" placeholder="50000"></label>
-          <label class="fld full">Size<input id="f-size" maxlength="40" placeholder="e.g. 12 × 20 ft"></label>
-        </div>
-        <fieldset><legend>Tenant (leave blank if the shop is vacant)</legend>
-          <div class="fgrid">
-            <label class="fld">Tenant name<input id="f-tenant" maxlength="60"></label>
-            <label class="fld">Mobile number<input id="f-phone" type="tel" placeholder="0300 1234567"></label>
-            <label class="fld">Business<input id="f-business" maxlength="60" placeholder="e.g. Clothing"></label>
-            <label class="fld">Rent start<input id="f-start" type="date" value="${cm}-01"></label>
-            <label class="fld">Due each month by day<input id="f-dueDay" type="number" min="1" max="28" value="${esc(S.settings.dueDay||5)}"></label>
-          </div>
-        </fieldset>
-        <button class="btn primary" type="submit" ${S.busy?"disabled":""}>Add shop and create PIN</button>
-      </form>
-      ${lc ? slipHTML(lc) : `<section class="panel stack"><h2 class="display h2">How it works</h2>
-        <ol class="steps">
-          <li>Add every shop in the market here: number, rent and tenant.</li>
-          <li>Each tenant gets their own Shop Code and PIN, which stay the same for life. Send them on WhatsApp.</li>
-          <li>Tenants upload a photo of each payment with its purpose. You approve it, and they instantly get a receipt with its own number and verification code.</li>
-          <li>Anyone can check a receipt is genuine on the "Verify Receipt" page.</li>
-        </ol></section>`}
-    </div>
-    <div class="row between" style="margin-bottom:12px"><h2 class="display h2">All shops</h2>
-      <div class="filters">${[["all","All"],["occ","Rented"],["due","With balance"],["vacant","Vacant"],["left",`Former tenants (${oldies.length})`]].map(([k,l])=>`<button type="button" class="chip" data-filter="${k}" aria-pressed="${S.filter===k}">${l}</button>`).join("")}</div></div>
-    ${units.length || oldies.length ? (rows.length ? `<div class="tbl-wrap"><table class="wide"><thead><tr><th>Shop</th><th>Shop code</th><th>Tenant</th><th class="num">Rent</th><th>${MON[today().getMonth()]}</th><th class="num">Balance</th><th>PIN</th></tr></thead><tbody>
-      ${rows.map(u => { const c = calc(u); return `<tr class="click" data-unit="${esc(u.id)}" tabindex="0" style="${c?.balance?"color:var(--danger)":""}">
-        <td><strong>${esc(u.shopNo)}</strong><div class="hint">${esc(u.floor||"")}</div></td>
-        <td class="mono">${esc(u.id)}</td>
-        <td>${u.status!=="vacant"?`${esc(u.tenant)}<div class="hint">${esc(u.status==="left"?"Left "+fmtD(u.endDate):(u.business||""))}</div>`:'<span class="pill off">Vacant</span>'}</td>
-        <td class="num">${rs(u.rent)}</td>
-        <td>${c?`<span class="pill ${c.cur.k}">${esc(c.cur.t)}</span>`:"—"}</td>
-        <td class="num" style="${c?.balance?"font-weight:700":""}">${c?rs(c.balance):"—"}</td>
-        <td class="mono">${esc(S.pins[u.id]||"—")}</td></tr>`; }).join("")}
-      </tbody></table></div>` : `<div class="empty"><p class="muted">No shops match this filter.</p></div>`)
-      : `<div class="empty"><h3>No shops yet</h3><p class="muted">Add the first shop in your market using the form above.</p></div>`}`;
-}
-function slipHTML(lc){
-  const text = `Assalam o Alaikum ${lc.tenant||""}!\nYour account for shop ${lc.shopNo} at ${mkName()} is ready.\n\nShop Code: ${lc.code}\nPIN: ${lc.pin}\n\nOpen the link, go to "Tenant Login" and enter this code and PIN. You can see your whole rent history, payments, invoices and receipts there, and upload payments. This code is yours for life.`;
-  return `<section class="slip">
-    <span class="eyebrow">Give this to the tenant · ${esc(lc.shopNo)}</span>
-    <div class="creds">
-      <div class="cred" data-copy-scope><span class="hint">Shop Code</span><b class="mono">${esc(lc.code)}</b><button type="button" class="btn sm" data-copy="${esc(lc.code)}">Copy</button></div>
-      <div class="cred" data-copy-scope><span class="hint">PIN</span><b class="mono">${esc(lc.pin)}</b><button type="button" class="btn sm" data-copy="${esc(lc.pin)}">Copy</button></div>
-    </div>
-    <div class="row">${waLink(lc.phone)?`<a class="btn primary" target="_blank" rel="noopener" href="${esc(waLink(lc.phone,text))}">Send on WhatsApp</a>`:""}
-      <button type="button" class="btn" data-copy="${esc(text)}">Copy full message</button>
-      <button type="button" class="btn sm" data-dismiss-slip>Close</button></div>
-    <p class="hint" style="margin:0">Paste this page's link into the message too.</p>
-  </section>`;
-}
-function viewUnitAdmin(){
-  const u = S.units.find(x => x.id === S.openUnit);
-  if (!u){ S.openUnit = null; return viewAdmin(); }
-  const c = calc(u);
-  const ledger = [...(u.payments||[])].sort((a,b)=> sortKey(b).localeCompare(sortKey(a)));
-  const remind = c ? `Assalam o Alaikum ${u.tenant},\nRent for ${u.shopNo} (${mkName()}) is outstanding.\nTotal balance: ${rsT(c.balance)}\nMonthly rent: ${rsT(u.rent)}, due by the ${u.dueDay||5}th of each month.\nPlease pay as soon as possible. Thank you.` : "";
-  const ask = k => S.confirm?.kind===k && S.confirm.id===u.id;
-  return `<button type="button" class="back" data-close>← All shops</button>
-    <div class="row between" style="margin-bottom:16px">
-      <div><span class="eyebrow">${esc(u.floor||"")}${u.size?" · "+esc(u.size):""} · Shop code <span class="mono">${esc(u.id)}</span> · PIN <span class="mono">${esc(S.pins[u.id]||"—")}</span></span>
-      <h1 class="display h1">${esc(u.shopNo)}</h1>
-      <div class="muted">${u.status!=="vacant"?`${esc(u.tenant)} · <span class="mono">${esc(u.phone||"")}</span>${u.business?" · "+esc(u.business):""}`:"Vacant shop"}</div></div>
-      <div class="row">
-        ${c&&c.balance&&waLink(u.phone)&&u.status==="occupied"?`<a class="btn" target="_blank" rel="noopener" href="${esc(waLink(u.phone,remind))}">Send rent reminder</a>`:""}
-        ${u.status==="left"?"":`<button type="button" class="btn" data-edit>${S.editing?"Close editing":"Edit"}</button>`}
-      </div>
-    </div>
-    ${S.msg?`<div style="margin-bottom:16px">${msgHTML()}</div>`:""}
-    ${S.lastCreated?.code===u.id?`<div style="margin-bottom:16px">${slipHTML(S.lastCreated)}</div>`:""}
-    ${S.editing?editForm(u):""}
-    ${c ? `<div class="stats" style="margin-bottom:20px">
-      <div class="stat"><b>Rs ${num(u.rent)}</b><span>Monthly rent · due by the ${u.dueDay||5}th</span></div>
-      <div class="stat"><b>Rs ${num(c.paid)}</b><span>Collected so far (${c.months.length} months)</span></div>
-      <div class="stat ${c.balance?"alert":""}"><b>Rs ${num(c.balance)}</b><span>${c.advance?`Advance ${rsT(c.advance)}`:"Balance"}</span></div>
-      <div class="stat"><span class="pill ${c.cur.k}" style="font-size:13px;justify-self:start">${esc(c.cur.t)}</span><span>${monLabel(curMonth())}</span></div>
-    </div>
-    <div class="two">
-      ${u.status==="left"?`<div class="msg info">${esc(u.tenant)} left this shop on ${fmtD(u.endDate)}. This record is now read-only.</div>`:`<form class="panel stack" id="payForm">
-        <h2 class="display h3">Record a payment</h2>
-        <div class="fgrid">
-          <label class="fld">For month<select id="p-month">${[...c.months].reverse().map(k=>`<option value="${k}" ${k===curMonth()?"selected":""}>${monLabel(k)}${(c.byMonth[k]||0)>=c.rent?" ✓":""}</option>`).join("")}</select></label>
-          <label class="fld">Amount (Rs)<input id="p-amount" type="number" min="1" required value="${esc(u.rent)}"></label>
-          <label class="fld">Method<select id="p-method">${methodNames().map(m=>`<option>${esc(m)}</option>`).join("")}</select></label>
-          <label class="fld">Purpose<select id="p-reason">${REASONS.map(r=>`<option>${r}</option>`).join("")}</select></label>
-          <label class="fld">Deduct (Rs)<input id="p-ded" type="number" min="0" value="0"><span class="hint">Part of the amount used for something else</span></label>
-          <label class="fld">Reason for deduction<input id="p-why" maxlength="80" placeholder="e.g. Electricity bill"></label>
-          <label class="fld full">Note<input id="p-note" maxlength="120" placeholder="Bank reference, etc."></label>
-        </div>
-        <p class="hint" style="margin:0">Today's date and time are recorded automatically, and a numbered receipt with a verification code is issued.</p>
-        <button class="btn primary" type="submit" ${S.busy?"disabled":""}>Record payment</button>
-      </form>`}
-      <section class="stack"><h2 class="display h3">Last 12 months</h2>${monthStrip(u,c)}</section>
-    </div>
-    <h2 class="display h2" style="margin-top:24px">Full account · ${monLabel(c.months[0])} to now</h2>
-    ${fullHistory(u,c)}
-    <h2 class="display h2" style="margin-top:24px">Payments &amp; receipts</h2>
-    ${ledgerTable(ledger, true, u)}` : `<div class="empty"><h3>Shop is vacant</h3><p class="muted">Press "Edit" and enter the tenant's name, number and rent start date. Their Shop Code and PIN are created automatically.</p></div>`}
-    <section class="panel stack" style="margin-top:28px">
-      <h2 class="display h3">More actions</h2>
-      <div class="row">
-        ${u.status==="left"?`<span class="hint">This is a former tenant. Shop Code ${esc(u.id)} and the PIN stay with them for life.</span>`:""}
-        ${u.status==="occupied"?(ask("vacate")?`<span class="inline-confirm">Is ${esc(u.tenant)} leaving? Their code and PIN stay the same and they can always see their account. The next tenant gets a new code. <button type="button" class="btn sm danger solid" data-vacate="${esc(u.id)}">Yes, vacate</button><button type="button" class="btn sm" data-cancel>No</button></span>`:`<button type="button" class="btn sm danger" data-ask="vacate:${esc(u.id)}">Vacate shop</button>`):""}
-        ${ask("unit")?`<span class="inline-confirm">This record, Shop Code and PIN will be deleted for good. Are you sure? <button type="button" class="btn sm danger solid" data-del-unit="${esc(u.id)}">Yes, delete</button><button type="button" class="btn sm" data-cancel>No</button></span>`:`<button type="button" class="btn sm danger" data-ask="unit:${esc(u.id)}">Delete record</button>`}
-      </div>
-    </section>`;
-}
-function editForm(u){
-  return `<form class="panel stack" id="editForm" style="margin-bottom:20px;border:2px solid var(--marigold)">
-    <h2 class="display h3">Edit shop</h2>
-    <div class="fgrid">
-      <label class="fld">Shop number<input id="f-shopNo" required value="${esc(u.shopNo)}"></label>
-      <label class="fld">Floor<select id="f-floor">${[...new Set([u.floor, ...FLOORS].filter(Boolean))].map(f=>`<option ${f===u.floor?"selected":""}>${esc(f)}</option>`).join("")}</select></label>
-      <label class="fld">Monthly rent (Rs)<input id="f-rent" type="number" min="0" required value="${esc(u.rent)}"></label>
-      <label class="fld">Security deposit (Rs)<input id="f-deposit" type="number" min="0" value="${esc(u.deposit)}"></label>
-      <label class="fld full">Size<input id="f-size" value="${esc(u.size)}"></label>
-      <label class="fld">Tenant name<input id="f-tenant" value="${esc(u.tenant)}"></label>
-      <label class="fld">Mobile number<input id="f-phone" type="tel" value="${esc(u.phone)}"></label>
-      <label class="fld">Business<input id="f-business" value="${esc(u.business)}"></label>
-      <label class="fld">Rent start<input id="f-start" type="date" value="${esc(u.startDate||curMonth()+"-01")}"></label>
-      <label class="fld">Due each month by day<input id="f-dueDay" type="number" min="1" max="28" value="${esc(u.dueDay||5)}"></label>
-    </div>
-    <p class="hint" style="margin:0">Changing the rent also recalculates past months at the new rent.</p>
-    <div class="row"><button class="btn primary" type="submit" ${S.busy?"disabled":""}>Save</button><button type="button" class="btn" data-edit>Cancel</button></div>
-  </form>`;
-}
-function readUnitForm(f){
-  const g = id => f.querySelector("#f-"+id)?.value.trim() ?? "";
-  const tenant = g("tenant");
-  return {shopNo:g("shopNo"), floor:g("floor"), size:g("size"), rent:Number(g("rent"))||0, deposit:Number(g("deposit"))||0,
-    tenant, phone:g("phone"), business:g("business"), startDate: tenant ? (g("start") || curMonth()+"-01") : "",
-    dueDay: Math.min(28, Math.max(1, Number(g("dueDay"))||5)), status: tenant ? "occupied" : "vacant"};
-}
-async function setPin(code, pin){
-  const h = await hashPin(code, pin);
-  await write(()=>S.db.doc("auth/"+code).set({alg:h.alg, h:h.h, updatedAt:Date.now()}));
-  const pins = {...S.pins, [code]:pin};
-  await write(()=>S.db.doc("admin/pins").set({map:pins}));
-  S.pins = pins;
-}
-async function unitUpdate(id, fn, okMsg){
-  S.busy = true; S.msg = null; render();
-  try { const snap = await S.db.doc("units/"+id).get(); const u = snap.exists ? {id, ...snap.data()} : S.units.find(x=>x.id===id); const patch = await fn(u); await write(()=>S.db.doc("units/"+id).update({...patch, updatedAt:Date.now()})); if (okMsg) setMsg("ok", typeof okMsg === "function" ? okMsg(patch) : okMsg); }
-  catch(e){ setMsg("err", errText(e)); }
-  S.busy = false; render();
+function renderInvoices(){
+  const m=invMonth||thisMonth();
+  const rows=shops.filter(s=>!s.closed||(s.entries||[]).some(x=>x.month===m)).sort((a,b)=>String(a.shopNo).localeCompare(String(b.shopNo),undefined,{numeric:true})).map(s=>({s,e:(s.entries||[]).find(x=>x.month===m)}));
+  const withE=rows.filter(r=>r.e);let due=0,paid=0;withE.forEach(r=>{const c=entryCalc(r.e);due+=c.due;paid+=c.paid});
+  app.innerHTML=`<div class="spread"><h2>Invoices</h2><label class="f" style="flex-direction:row;align-items:center;gap:8px">Mahina<input id="invM" type="month" value="${esc(m)}" style="width:auto"></label></div>
+  <div class="grid g4">
+    <div class="stat"><span class="lbl">Invoices tayyar</span><b>${withE.length} / ${rows.length}</b></div>
+    <div class="stat"><span class="lbl">Kul banta hai</span><b>${rs(due)}</b></div>
+    <div class="stat"><span class="lbl">Wasool</span><b>${rs(paid)}</b></div>
+    <div class="stat ${due-paid>0?'due':''}"><span class="lbl">Baqi</span><b>${rs(due-paid)}</b></div>
+  </div>
+  ${withE.length&&downloads?`<div class="row"><button class="btn pri" id="allDl">${esc(monthLabel(m))} ki sab invoices download</button><span class="muted" style="font-size:13px">Ek file mein saari invoices, print ke liye.</span></div>`:''}
+  ${!rows.length?`<div class="panel empty"><h3>Abhi koi dukaan nahi</h3><p>Pehle "Nayi Dukaan" se market ki dukanein add karein.</p></div>`:
+  `<div class="tbl-wrap"><table><thead><tr><th>Dukaan #</th><th>Karayadar</th><th>Invoice #</th><th class="num">Kul</th><th class="num">Jama</th><th class="num">Baqi</th><th>Halat</th><th></th></tr></thead><tbody>
+  ${rows.map(({s,e})=>{if(!e)return `<tr><td><b>${esc(s.shopNo)}</b></td><td>${esc(s.tenant)}</td><td class="muted">—</td><td></td><td></td><td></td><td><span class="pill due">Bill nahi likha</span></td><td><button class="btn sm" data-open="${esc(s.code)}">Bill likhein</button></td></tr>`;
+    const c=entryCalc(e),st=status(e);return `<tr><td><b>${esc(s.shopNo)}</b></td><td>${esc(s.tenant)}</td><td><span class="code">${esc(invNo(s,e))}</span></td><td class="num">${rs(c.due)}</td><td class="num">${rs(c.paid)}</td><td class="num">${rs(Math.max(c.bal,0))}</td><td><span class="pill ${st[0]}">${st[1]}</span></td><td><button class="btn sm pri" data-inv="${esc(s.code)}">Invoice</button></td></tr>`}).join('')}
+  </tbody></table></div>`}`;
+  $('#invM').onchange=ev=>{invMonth=ev.target.value||thisMonth();renderInvoices()};
+  app.querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>{const s=shops.find(x=>x.code===b.dataset.inv);openInvoice(s,s.entries.find(e=>e.month===m))});
+  app.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{view.tab='shops';view.shop=b.dataset.open;render()});
+  const ad=$('#allDl');if(ad)ad.onclick=async()=>{const body=withE.map(r=>invoiceBody(r.s,r.e)).join('<div style="page-break-after:always;height:28px"></div>');
+    try{await downloads.save({filename:'Invoices-'+m+'.html',data:new Blob([invoiceFile(null,null,body,'Invoices '+monthLabel(m))],{type:'text/html'})});toast('Invoices save ho gayin')}catch(er){if(er&&er.code!=='declined')toast('Download nahi hua')}};
 }
 
-/* ---------- events ---------- */
-document.addEventListener("click", async e => {
-  const mrow = e.target.closest("tr[data-month]");
-  if (mrow){ S.selMonth = mrow.dataset.month; render(); return; }
-  if (e.target.matches("img[data-proof]")){ S.proofView = e.target.dataset.proof; renderOverlay(); return; }
-  const row = e.target.closest("tr[data-unit]");
-  if (row && !e.target.closest("button, img")){ S.view = "admin"; S.openUnit = row.dataset.unit; S.msg = null; S.editing = false; S.confirm = null; render(); scrollTo(0,0); return; }
-  const t = e.target.closest("button, a"); if (!t) return;
-  const d = t.dataset;
-  if (d.tab){ S.view = d.tab; S.openUnit = null; S.msg = null; S.confirm = null; S.draft = null; render(); scrollTo(0,0); return; }
-  if (d.close != null){ S.openUnit = null; S.msg = null; S.editing = false; S.confirm = null; render(); return; }
-  if (d.filter){ S.filter = d.filter; render(); return; }
-  if (d.csv){ exportCSV(d.csv); return; }
-  if (d.inv){ const [id,month] = d.inv.split("|"); S.invoice = {id, month}; renderOverlay(); return; }
-  if (d.rcpt){ const [id,pid] = d.rcpt.split("|"); if (d.seen && S.session) markSeen(S.session, d.seen); S.invoice = {id, pid}; render(); return; }
-  if (d.closeInv != null){ S.invoice = null; S.proofView = null; renderOverlay(); return; }
-  if (d.pdf != null){ downloadPDF(t); return; }
-  if (d.proof){ S.proofView = d.proof; loadProof(d.proof); renderOverlay(); return; }
-  if (d.seen){ if (S.session) markSeen(S.session, d.seen); render(); return; }
-  if (d.addMethod != null){ readDraft(); S.draft.push({name:"",details:"",on:true}); render(); document.getElementById("s-mname-"+(S.draft.length-1))?.focus(); return; }
-  if (d.rmMethod != null){ readDraft(); S.draft.splice(Number(d.rmMethod),1); render(); return; }
-  if (d.copy != null){ copy(d.copy, t); return; }
-  if (d.dismissSlip != null){ S.lastCreated = null; render(); return; }
-  if (d.edit != null){ S.editing = !S.editing; render(); return; }
-  if (d.ask){ const [kind,id] = d.ask.split(":"); S.confirm = {kind,id}; render(); return; }
-  if (d.cancel != null){ S.confirm = null; render(); return; }
-  if (d.logout != null){ S.myUnsub?.(); S.myUnsub = null; S.session = null; S.myUnit = null; store.set(SESSION_KEY, null); S.msg = null; render(); return; }
-  if (d.approve || d.reject){ const [id,pid] = (d.approve||d.reject).split("|"); const ok = !!d.approve;
-    const v = k => document.getElementById(`ap-${k}-${pid}`)?.value.trim() ?? "";
-    const rentC = Math.max(0, Number(v("rent"))||0), ded = Math.max(0, Number(v("ded"))||0), why = v("why"), rej = v("rej");
-    let issued = null;
-    await unitUpdate(id, async u => { const now = new Date().toISOString(); const pays = [];
-      for (const p of (u.payments||[])){
-        if (p.id !== pid){ pays.push(p); continue; }
-        if (!ok){ pays.push({...p, status:"rejected", confirmedAt:now, rejectReason:rej}); continue; }
-        const np = {...p, status:"confirmed", confirmedAt:now, rentCredit:rentC, deductAmt:ded, deductReason:why};
-        issued = await issueReceipt(u, np); pays.push({...np, ...issued});
-      }
-      return {payments:pays}; },
-      () => ok ? `Approved: receipt ${issued?.rcptNo||""} issued (code ${issued?.rcptCode||""}). ${rsT(rentC)} credited to rent${ded?`, ${rsT(ded)} deducted (${why||"Other"})`:""}.` : "Payment rejected.");
-    return; }
-  if (d.delPay){ const id = S.openUnit, pid = d.delPay; S.confirm = null; const u = S.units.find(x=>x.id===id); const p = (u?.payments||[]).find(x=>x.id===pid);
-    await unitUpdate(id, uu => ({payments:(uu.payments||[]).filter(x=>x.id!==pid)}), "Payment deleted. Its receipt number is now marked as cancelled.");
-    await voidReceipt(p?.rcptNo);
-    try { await write(()=>S.db.doc("proofs/"+pid).delete()); } catch {} return; }
-  if (d.vacate){ const id = d.vacate; S.confirm = null; const u = S.units.find(x=>x.id===id); if (!u) return;
-    S.busy = true; S.msg = null; render();
-    try {
-      await write(()=>S.db.doc("units/"+id).update({status:"left", endDate:todayISO(), updatedAt:Date.now()}));
-      const code = newCode();
-      await write(()=>S.db.doc("units/"+code).set({shopNo:u.shopNo, floor:u.floor||"", size:u.size||"", rent:u.rent, deposit:u.deposit||0, tenant:"", phone:"", business:"", startDate:"", dueDay:u.dueDay||5, status:"vacant", payments:[], prevCode:id, createdAt:Date.now(), updatedAt:Date.now()}));
-      S.openUnit = code; setMsg("ok", `${u.tenant}'s record (Shop Code ${id}) is kept. ${u.shopNo} is now vacant. Press "Edit" to add the next tenant.`);
-    } catch(err){ setMsg("err", errText(err)); }
-    S.busy = false; render(); return; }
-  if (d.delUnit){ const id = d.delUnit; S.confirm = null; const u = S.units.find(x=>x.id===id);
-    try { await write(()=>S.db.doc("units/"+id).delete()); await write(()=>S.db.doc("auth/"+id).delete());
-      const pins = {...S.pins}; delete pins[id]; await write(()=>S.db.doc("admin/pins").set({map:pins})); S.pins = pins;
-      for (const p of (u?.payments||[])) await voidReceipt(p.rcptNo);
-      S.openUnit = null; if (S.lastCreated?.code===id) S.lastCreated = null; setMsg("ok","Record deleted. Its receipts are marked as cancelled."); }
-    catch(err){ setMsg("err", errText(err)); } render(); return; }
-});
-document.addEventListener("keydown", e => { if (e.key === "Escape" && (S.invoice || S.proofView)){ S.invoice = null; S.proofView = null; renderOverlay(); return; } if (e.key === "Enter" && e.target.matches("tr[data-unit], tr[data-month]")) e.target.click(); });
-document.addEventListener("change", e => { if (e.target.id === "inv-month"){ S.selMonth = e.target.value; render(); } });
-document.getElementById("overlay").addEventListener("click", e => { if (e.target.id === "overlay"){ S.invoice = null; S.proofView = null; renderOverlay(); } });
-document.addEventListener("submit", async e => {
-  e.preventDefault(); const f = e.target;
-  if (f.id === "verifyForm") return doVerify(f.querySelector("#v-no").value.trim(), f.querySelector("#v-code").value.trim());
-  if (f.id === "settingsForm"){ readDraft(); const g = id => f.querySelector("#s-"+id).value.trim();
-    const next = {marketName:g("market")||BRAND, landlord:g("landlord"), landlordPhone:g("phone"), dueDay:Math.min(28,Math.max(1,Number(g("due"))||5)), methods:S.draft.filter(m=>m.name), updatedAt:Date.now()};
-    S.busy = true; S.msg = null; render();
-    try { await write(()=>S.db.doc("config/settings").set(next)); S.settings = next; S.draft = null; setMsg("ok","Settings saved. Tenants will see the updated payment methods."); }
-    catch(err){ setMsg("err", errText(err)); }
-    S.busy = false; render(); return; }
-  if (f.id === "loginForm") return doLogin(f.querySelector("#l-code").value.trim().toUpperCase(), f.querySelector("#l-pin").value.trim());
-  if (f.id === "addForm"){
-    if (!S.db){ setMsg("err","Database unavailable."); render(); return; }
-    const data = readUnitForm(f); const code = newCode(), pin = newPin();
-    S.busy = true; S.msg = null; render();
-    try {
-      await write(()=>S.db.doc("units/"+code).set({...data, payments:[], createdAt:Date.now(), updatedAt:Date.now()}));
-      if (data.tenant){ await setPin(code, pin); S.lastCreated = {code, pin, shopNo:data.shopNo, tenant:data.tenant, phone:data.phone};
-        setMsg("ok", `${data.shopNo} added. ${data.tenant}'s Shop Code ${code} and PIN ${pin} are theirs for life.`); }
-      else setMsg("ok", `${data.shopNo} added as a vacant shop. A code and PIN are created when you add a tenant.`);
-    } catch(err){ setMsg("err", errText(err)); }
-    S.busy = false; render(); return;
+/* ---------- karayadar ---------- */
+function savedCode(){try{return localStorage.getItem('mkk-code')||''}catch(_){return''}}
+function renderTenant(){
+  if(!tenantShop){
+    const pre=(location.hash.slice(1).match(/^MK-[A-Z0-9]{6}$/i)||[])[0]||savedCode();
+    app.innerHTML=`<div class="lookup">
+      <h2>Apna kiraya dekhein</h2>
+      <p class="muted" style="margin:0">Malik ka diya hua dukaan code aur 4 hindson ka PIN daalein.</p>
+      <form id="lk" style="flex-direction:column">
+        <label class="f" style="text-align:left">Dukaan code<input id="lkCode" autocomplete="off" placeholder="MK-XXXXXX" value="${esc(pre)}" required></label>
+        <label class="f" style="text-align:left">PIN<input id="lkPin" type="password" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="••••" required></label>
+        <button class="btn pri" type="submit" id="lkBtn" style="justify-content:center">Apna record kholein</button></form>
+      ${tenantErr?`<div class="msg err">${esc(tenantErr)}</div>`:''}
+    </div>`;
+    $('#lk').onsubmit=ev=>{ev.preventDefault();lookup($('#lkCode').value,$('#lkPin').value)};return;
   }
-  if (f.id === "editForm"){ const data = readUnitForm(f); const id = S.openUnit; const before = S.units.find(x=>x.id===id);
-    const newTenant = data.status === "occupied" && !S.pins[id];
-    if (before?.status === "occupied" && data.status !== "occupied"){ setMsg("err","Don't clear the tenant's name. To end a tenancy, use the \"Vacate shop\" button."); render(); return; }
-    await unitUpdate(id, () => ({...data, startDate: data.tenant ? data.startDate : ""}), "Shop details saved."); S.editing = false;
-    if (newTenant && S.msg?.t === "ok"){ const pin = newPin(); try { await setPin(id, pin); S.lastCreated = {code:id, pin, shopNo:data.shopNo, tenant:data.tenant, phone:data.phone}; setMsg("ok", `${data.tenant}'s Shop Code ${id} and PIN ${pin} have been created. They are theirs for life.`); } catch(err){ setMsg("err", errText(err)); } }
-    render(); return; }
-  if (f.id === "payForm"){ const g = id => f.querySelector("#p-"+id).value.trim(); const now = new Date().toISOString();
-    const amount = Number(g("amount"))||0, reason = g("reason"), ded = Math.min(amount, Math.max(0, Number(g("ded"))||0));
-    const rentCredit = reason === RENT ? amount - ded : 0;
-    const p = {id:uid(), month:g("month"), amount, at:now, method:g("method"), reason, note:g("note"), status:"confirmed", by:"admin", confirmedAt:now, rentCredit, deductAmt: reason===RENT ? ded : amount, deductReason: reason===RENT ? g("why") : reason};
-    let issued = null;
-    await unitUpdate(S.openUnit, async u => { issued = await issueReceipt(u, p); return {payments:[...(u.payments||[]), {...p, ...issued}]}; },
-      () => `${rsT(amount)} recorded (${reason}), ${rsT(rentCredit)} credited to rent. Receipt ${issued?.rcptNo} · code ${issued?.rcptCode}.`); return; }
-  if (f.id === "claimForm"){ const g = id => f.querySelector("#c-"+id).value.trim(); const file = f.querySelector("#c-proof").files?.[0];
-    const p = {id:uid(), month:g("month"), amount:Number(g("amount"))||0, at:new Date().toISOString(), method:g("method"), reason:g("reason"), note:g("note"), status:"pending", by:"tenant", hasProof:false};
-    S.busy = true; S.msg = null; render();
-    try {
-      if (file){ const img = await compressImage(file); await write(()=>S.db.doc("proofs/"+p.id).set({img, unit:S.session, at:p.at})); p.hasProof = true; S.proofCache[p.id] = img; }
-    } catch(err){ S.busy = false; setMsg("err", errText(err)); render(); return; }
-    S.busy = false;
-    await tenantUpdate(cur => ({payments:[...(cur.payments||[]), p], updatedAt:Date.now()}), "Payment uploaded. Your numbered receipt will appear here as soon as the landlord approves it."); return; }
-  if (f.id === "tenantInfo"){ const phone = f.querySelector("#t-phone").value.trim(), business = f.querySelector("#t-business").value.trim();
-    await tenantUpdate(() => ({phone, business, updatedAt:Date.now()}), "Details saved."); return; }
-});
+  const s=tenantShop;const t=shopTotals(s);const entries=sortE(s);
+  const curBal=Math.max(t.bal,0);
+  app.innerHTML=`
+  <button class="back" id="tOut">← Bahar niklein</button>
+  ${s.closed?`<div class="msg err">Yeh dukaan ${esc(s.closedAt||'')} ko chhor di gayi. Aap ka poora record yahan mehfooz hai.</div>`:''}
+  <div class="spread"><div><span class="lbl">${esc(settings.marketName||'Market')} · Dukaan ${esc(s.shopNo)}</span><h2>${esc(s.tenant)}</h2></div><span class="code big">${esc(s.code)}</span></div>
+  <div class="grid g4">
+    <div class="stat"><span class="lbl">Mahana kiraya</span><b>${rs(s.monthlyRent)}</b></div>
+    <div class="stat"><span class="lbl">Kul banta hai</span><b>${rs(t.due)}</b></div>
+    <div class="stat"><span class="lbl">Aap ne jama kiya</span><b>${rs(t.paid)}</b></div>
+    <div class="stat ${t.bal>0?'due':''}"><span class="lbl">Baqaya</span><b>${rs(t.bal)}</b></div>
+  </div>
+  <div class="panel grid" style="gap:12px"><h3>Kiraya jama karwayein</h3>
+    ${pms().length?`<p class="muted" style="margin:0">Neeche diye gaye kisi bhi account mein ${curBal?'<b>'+rs(curBal)+'</b>':'kiraya'} bhejein.</p>${payHTML()}`:`<p class="muted" style="margin:0">Kiraya malik ko cash ya unke bataye account mein jama karwayein.</p>`}
+    <form id="tPay" class="grid g2" style="gap:10px">
+      <label class="f">Raqam (Rs.)<input id="tp_amt" type="number" min="1" value="${curBal||''}"></label>
+      <label class="f">Tareeqa<select id="tp_method">${methodOptions().map(m=>`<option>${esc(m)}</option>`).join('')}</select></label>
+      <label class="f">Transaction ID<input id="tp_ref" placeholder="Payment ke baad milne wala TID"></label>
+      <div style="display:flex;align-items:end"><button class="btn pri" type="submit" style="width:100%;justify-content:center">Malik ke liye message copy karein</button></div>
+    </form>
+    <p class="muted" style="margin:0;font-size:13px">Payment bhejne ke baad yeh message WhatsApp par malik ko bhejein${settings.phone?' (<b style="user-select:all">'+esc(settings.phone)+'</b>)':''}. Malik ke tasdeeq karte hi payment aap ke record mein aa jayegi.</p>
+  </div>
+  <div class="panel"><h3 style="margin-bottom:12px">Aap ki dukaan ki detail</h3>
+    <div class="kv">
+      <div><span class="lbl">Dukaan #</span><span>${esc(s.shopNo)}</span></div>
+      <div><span class="lbl">Karayadar</span><span>${esc(s.tenant)}</span></div>
+      <div><span class="lbl">Mobile</span><span>${esc(s.phone||'—')}</span></div>
+      <div><span class="lbl">CNIC</span><span>${esc(s.cnic||'—')}</span></div>
+      <div><span class="lbl">Karobar</span><span>${esc(s.business||'—')}</span></div>
+      <div><span class="lbl">Kiraya shuru tareekh</span><span>${esc(s.startDate||'—')}</span></div>
+      <div><span class="lbl">Security / advance</span><span>${rs(s.security||0)}</span></div>
+      <div><span class="lbl">Note</span><span>${esc(s.note||'—')}</span></div>
+    </div>
+  </div>
+  <div class="spread"><h3>Poori umar ka kiraya record</h3><span class="muted">${entries.length} mahine</span></div>
+  ${entries.length?entryTable(s,entries,false):`<div class="panel empty"><h3>Abhi koi kiraya record nahi</h3><p>Jab malik mahine ka bill likhega, yahan nazar aayega.</p></div>`}`;
+  $('#tOut').onclick=()=>{tenantShop=null;tenantErr='';tenantCred=null;if(tenantUnsub){tenantUnsub();tenantUnsub=null}renderTenant()};
+  $('#tPay').onsubmit=ev=>{ev.preventDefault();const a=+$('#tp_amt').value||0;
+    copy(`Assalam o Alaikum,\nMain ne kiraya jama karwa diya hai.\nDukaan: ${s.shopNo} (Code ${s.code})\nNaam: ${s.tenant}\nRaqam: ${rs(a)}\nTareeqa: ${$('#tp_method').value}\nTransaction ID: ${$('#tp_ref').value.trim()||'—'}\nTareekh: ${today()}\nMeherbani karke record mein likh dein.`)};
+  bindEntryTable(s);
+}
+async function lookup(rawCode,rawPin){
+  let c=norm(rawCode);if(c&&!c.startsWith('MK-'))c='MK-'+c.replace(/^MK/,'');
+  const pin=String(rawPin||'').trim();
+  if(!/^MK-[A-Z0-9]{6}$/.test(c)){tenantErr='Code sahi nahi. Code is tarah hota hai: MK- aur 6 huroof/number.';renderTenant();return}
+  if(!/^\d{4}$/.test(pin)){tenantErr='PIN 4 hindson ka hota hai.';renderTenant();return}
+  const btn=$('#lkBtn');if(btn){btn.disabled=true;btn.textContent='Khul raha hai…'}
+  try{const id=await portalId(c,pin);const ref=db.doc('portal/'+id);const snap=await ref.get();
+    if(!snap.exists){tenantErr='Code ya PIN ghalat hai. Malik se confirm karein.';renderTenant();return}
+    tenantShop=await openPortal(snap.data(),c,pin);tenantCred={c,pin};tenantErr='';try{localStorage.setItem('mkk-code',c)}catch(_){}
+    renderTenant();
+    if(tenantUnsub)tenantUnsub();
+    tenantUnsub=ref.onSnapshot(async sn=>{if(sn.exists&&tenantCred){try{const d=await openPortal(sn.data(),c,pin);if(JSON.stringify(d)!==JSON.stringify(tenantShop)){tenantShop=d;const a=document.activeElement;if(!(a&&a.matches&&a.matches('input,select')))renderTenant()}}catch(_){}}},()=>{});
+  }catch(e){tenantErr='Abhi record nahi khula. Thori dair baad koshish karein.';renderTenant()}
+}
 
-/* ---------- start ---------- */
-S.session = store.get(SESSION_KEY);
-document.getElementById("foot-date").textContent = fmtD(todayISO());
-render();
-(async () => {
-  const use = window.claude?.use;
-  const [db, user, dl] = use ? await Promise.all([use("db"), use("user"), use("downloads")]) : [null, null, null];
-  S.db = db; S.downloads = dl;
-  S.isOwner = user ? await user.isOwner().catch(()=>false) : false;
-  const h = (location.hash||"").slice(1);
-  S.view = h === "verify" ? "verify" : S.isOwner && h !== "login" ? (["months","invoices","settings"].includes(h) ? h : "admin") : "login";
-  if (!db){ S.dbMissing = true; S.ready = true; render(); return; }
-  db.doc("config/settings").onSnapshot(snap => { if (snap.exists){ S.settings = {...DEFAULT_SETTINGS, ...snap.data()}; if (!fieldsBusy() && S.view !== "settings") render(); } }, () => {});
-  if (S.session) subscribeMine();
-  if (S.isOwner){
-    try { const p = await db.doc("admin/pins").get(); if (p.exists) S.pins = p.data().map || {}; } catch {}
-    try { await ensureSecrets(); } catch {}
-    db.collection("units").limit(1000).onSnapshot(snap => {
-      S.units = snap.docs.map(d => ({id:d.id, ...d.data()})); S.ready = true;
-      if (!fieldsBusy()) render();
-      migrateReceipts();
-    }, () => { S.ready = true; render(); });
-    setTimeout(()=>{ if (!S.ready){ S.ready = true; render(); } }, 8000);
-  } else { S.ready = true; render(); }
+/* ---------- invoice ---------- */
+function invoiceBody(s,e){
+  const c=entryCalc(e);const st=status(e);const ps=payList(e).filter(p=>!p.void);
+  const col=st[0]==='paid'?'#1F7A3F':st[0]==='part'?'#8A5A00':'#B3261E';
+  return `<div class="inv">
+   <div class="ih"><div><h4>${esc(settings.marketName||'Market')}</h4><div style="font-size:13px;color:#5b6b63">${esc(settings.address||'')}${settings.phone?'<br>Rabta: '+esc(settings.phone):''}${settings.ownerName?'<br>Malik: '+esc(settings.ownerName):''}</div></div>
+   <div><div class="t">Kiraya Invoice</div><div style="font-family:var(--f-mono);font-weight:700;text-align:right">${esc(invNo(s,e))}</div><div style="font-size:13px;color:#5b6b63;text-align:right">Tareekh: ${esc(today())}</div></div></div>
+   <div class="meta">
+    <div><b>Karayadar</b>${esc(s.tenant)}</div><div><b>Dukaan #</b>${esc(s.shopNo)}</div>
+    <div><b>Karayadar code</b><span style="font-family:var(--f-mono);font-weight:700">${esc(s.code)}</span></div><div><b>Mahina</b>${esc(monthLabel(e.month))}</div>
+    ${s.phone?`<div><b>Mobile</b>${esc(s.phone)}</div>`:''}
+   </div>
+   <table><thead><tr><th>Tafseel</th><th class="num">Raqam</th></tr></thead><tbody>
+    <tr><td>Kiraya — ${esc(monthLabel(e.month))}</td><td class="num">${rs(e.rent)}</td></tr>
+    ${(+e.extra)?`<tr><td>${esc(e.extraNote||'Deegar charges')}</td><td class="num">${rs(e.extra)}</td></tr>`:''}
+    <tr><td><b>Kul raqam</b></td><td class="num"><b>${rs(c.due)}</b></td></tr>
+    ${(+e.paid)?`<tr><td>Jama (pehle se likha)</td><td class="num">− ${rs(e.paid)}</td></tr>`:''}
+    ${ps.map(p=>`<tr><td>Jama ${esc(p.date)} · ${esc(p.method)}${p.ref?' · TID '+esc(p.ref):''}</td><td class="num">− ${rs(p.amount)}</td></tr>`).join('')}
+    <tr class="tot"><td>Baqi</td><td class="num">${rs(Math.max(c.bal,0))}</td></tr>
+   </tbody></table>
+   ${e.note?`<p style="font-size:13px;color:#5b6b63;margin:12px 0 0">Note: ${esc(e.note)}</p>`:''}
+   ${pms().length?`<div style="margin-top:14px;font-size:13px"><b style="display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#5b6b63;margin-bottom:4px">Payment methods</b>${pms().map(p=>`<div>${esc(p.title)}: <b style="font-family:var(--f-mono)">${esc(p.number)}</b>${p.holder?' ('+esc(p.holder)+')':''}</div>`).join('')}</div>`:''}
+   <div class="stamp" style="color:${col}">${st[0]==='paid'?'ADA SHUDA':st[0]==='part'?'JUZVI ADA':'BAQAYA'}</div>
+  </div>`;
+}
+function invoiceFile(s,e,bodyHtml,ttl){
+  const st=document.querySelector('style');const css=st?(st.textContent.match(/\.inv[^{]*\{[^}]*\}/g)||[]).join('\n'):'';
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(ttl||invNo(s,e))}</title>
+<style>:root{--f-display:Georgia,serif;--f-body:system-ui,sans-serif;--f-mono:ui-monospace,monospace}body{margin:0;padding:24px;background:#fff;font-family:system-ui,sans-serif}table{border-collapse:collapse;width:100%}th,td{text-align:left}.num{text-align:right}${css}@media print{body{padding:0}}</style></head><body>${bodyHtml||invoiceBody(s,e)}<p style="font-size:12px;color:#777;margin-top:18px">Print karne ke liye Ctrl+P dabayein.</p></body></html>`;
+}
+function openInvoice(s,e){
+  if(!s||!e)return;
+  const bg=document.createElement('div');bg.className='modal-bg';
+  bg.innerHTML=`<div class="modal" role="dialog" aria-label="Invoice"><div class="spread"><h3>Invoice</h3><button class="btn sm" id="mClose">Band karein</button></div>
+   ${invoiceBody(s,e)}
+   <div class="row">${downloads?'<button class="btn pri" id="mDl">Invoice download karein</button>':''}<button class="btn" id="mCp">Text copy (WhatsApp)</button></div><div id="mMsg"></div></div>`;
+  document.body.appendChild(bg);
+  const close=()=>bg.remove();bg.onclick=ev=>{if(ev.target===bg)close()};$('#mClose').onclick=close;
+  const c=entryCalc(e);
+  $('#mCp').onclick=()=>copy(`*${settings.marketName||'Market'}* — Kiraya Invoice\n${invNo(s,e)}\nKarayadar: ${s.tenant}\nDukaan: ${s.shopNo} (Code ${s.code})\nMahina: ${monthLabel(e.month)}\nKiraya: ${rs(e.rent)}${(+e.extra)?`\n${e.extraNote||'Deegar'}: ${rs(e.extra)}`:''}\nKul: ${rs(c.due)}\nJama: ${rs(c.paid)}\nBaqi: ${rs(Math.max(c.bal,0))}${pms().length?'\n\nPayment:\n'+pms().map(p=>`${p.title}: ${p.number}`).join('\n'):''}`);
+  const dl=$('#mDl');if(dl)dl.onclick=async()=>{try{await downloads.save({filename:invNo(s,e)+'.html',data:new Blob([invoiceFile(s,e)],{type:'text/html'})});$('#mMsg').innerHTML='<div class="msg ok">Invoice save ho gayi. Kholein aur print karein.</div>'}catch(er){if(er&&er.code!=='declined')$('#mMsg').innerHTML='<div class="msg err">Download nahi hua. "Text copy" use karein.</div>'}};
+}
+
+/* ---------- raseed (receipt) ---------- */
+const ONES=['','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+const TENS=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+function w99(n){return n<20?ONES[n]:TENS[Math.floor(n/10)]+(n%10?'-'+ONES[n%10]:'')}
+function w999(n){return(n>=100?ONES[Math.floor(n/100)]+' hundred'+(n%100?' ':''):'')+(n%100?w99(n%100):'')}
+function inWords(n){n=Math.round(+n||0);if(!n)return 'Zero';const parts=[];const units=[[10000000,'crore'],[100000,'lakh'],[1000,'thousand']];
+  for(const[v,l]of units){if(n>=v){parts.push(w999(Math.floor(n/v))+' '+l);n%=v}}if(n)parts.push(w999(n));const t=parts.join(' ');return t[0].toUpperCase()+t.slice(1)+' rupees only'}
+function rcpNo(s,p){return 'RCP-'+s.code.replace('MK-','')+'-'+String(p.id).slice(-5).toUpperCase()}
+function balAfter(e,p){const due=(+e.rent||0)+(+e.extra||0);let paid=+e.paid||0;for(const x of payList(e)){paid+=(+x.amount||0);if(x.id===p.id)break}return Math.max(due-paid,0)}
+function receiptBody(s,e,p){
+  const left=balAfter(e,p);
+  return `<div class="inv">
+   <div class="ih"><div><h4>${esc(settings.marketName||'Market')}</h4><div style="font-size:13px;color:#5b6b63">${esc(settings.address||'')}${settings.phone?'<br>Rabta: '+esc(settings.phone):''}</div></div>
+   <div><div class="t">Payment Raseed</div><div style="font-family:var(--f-mono);font-weight:700;text-align:right">${esc(rcpNo(s,p))}</div><div style="font-size:13px;color:#5b6b63;text-align:right">Tareekh: ${esc(p.date)}</div></div></div>
+   <p style="margin:16px 0 0;font-size:15px;line-height:1.7">Wasool kiye <b>${esc(s.tenant)}</b> se, Dukaan # <b>${esc(s.shopNo)}</b> (code <span style="font-family:var(--f-mono);font-weight:700">${esc(s.code)}</span>), <b>${esc(monthLabel(e.month))}</b> ke kiraye ki mad mein.</p>
+   <div style="margin-top:14px;border:2px solid #0D6B4E;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+     <div><b style="display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#5b6b63">Raqam</b><span style="font-family:var(--f-display);font-size:28px;font-weight:700;color:#0D6B4E">${rs(p.amount)}</span></div>
+     <div style="font-size:13px;color:#5b6b63;max-width:300px">${esc(inWords(p.amount))}</div></div>
+   <div class="meta">
+    <div><b>Tareeqa</b>${esc(p.method||'—')}</div><div><b>Transaction ID</b>${esc(p.ref||'—')}</div>
+    <div><b>Mahine ka kul bill</b>${rs((+e.rent||0)+(+e.extra||0))}</div><div><b>Is payment ke baad baqi</b>${rs(left)}</div>
+    <div><b>Invoice #</b>${esc(invNo(s,e))}</div>
+   </div>
+   <div style="display:flex;justify-content:space-between;align-items:end;gap:14px;flex-wrap:wrap;margin-top:22px">
+     <div class="stamp" style="color:${left?'#8A5A00':'#1F7A3F'};margin-top:0">${left?'JUZVI WASOOL':'MUKAMMAL WASOOL'}</div>
+     <div style="text-align:center;font-size:12.5px;color:#5b6b63"><div style="border-top:1px solid #16211c;width:170px;padding-top:4px">${esc(settings.ownerName||'Malik')} — dastakhat</div></div></div>
+  </div>`;
+}
+function openModal(title,body,file,fileTitle,copyText){
+  const bg=document.createElement('div');bg.className='modal-bg';
+  bg.innerHTML=`<div class="modal" role="dialog" aria-label="${esc(title)}"><div class="spread"><h3>${esc(title)}</h3><button class="btn sm" data-x>Band karein</button></div>
+   ${body}<div class="row">${downloads?'<button class="btn pri" data-dl>Download karein</button>':''}<button class="btn" data-cp>Text copy (WhatsApp)</button></div><div data-msg></div></div>`;
+  document.body.appendChild(bg);const q=x=>bg.querySelector(x);
+  const close=()=>bg.remove();bg.onclick=ev=>{if(ev.target===bg)close()};q('[data-x]').onclick=close;
+  q('[data-cp]').onclick=()=>copy(copyText);
+  const dl=q('[data-dl]');if(dl)dl.onclick=async()=>{try{await downloads.save({filename:file,data:new Blob([invoiceFile(null,null,body,fileTitle)],{type:'text/html'})});q('[data-msg]').innerHTML='<div class="msg ok">Save ho gayi. Kholein aur print karein.</div>'}catch(er){if(er&&er.code!=='declined')q('[data-msg]').innerHTML='<div class="msg err">Download nahi hua. "Text copy" use karein.</div>'}};
+}
+function openReceipt(s,e,p){if(!s||!e||!p)return;const no=rcpNo(s,p);
+  openModal('Payment Raseed',receiptBody(s,e,p),no+'.html',no,
+  `*${settings.marketName||'Market'}* — Payment Raseed\n${no}\nTareekh: ${p.date}\nKarayadar: ${s.tenant}\nDukaan: ${s.shopNo} (Code ${s.code})\nMahina: ${monthLabel(e.month)}\nWasool raqam: ${rs(p.amount)}\n(${inWords(p.amount)})\nTareeqa: ${p.method}${p.ref?'\nTID: '+p.ref:''}\nBaqi: ${rs(balAfter(e,p))}\nShukriya!`)}
+
+/* ---------- boot ---------- */
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{view.tab=b.dataset.tab;if(b.dataset.tab!=='shops')view.shop=null;render()});
+(async()=>{
+  const C=window.claude;if(!C||!C.use){render();return}
+  const [d,u,dl]=await Promise.all([C.use('db'),C.use('user'),C.use('downloads')]);
+  db=d;downloads=dl;
+  try{isAdmin=u?await u.canEdit():false}catch(_){isAdmin=false}
+  if(!db){render();return}
+  $('#tabs').hidden=!isAdmin;
+  db.doc('meta/settings').onSnapshot(sn=>{if(sn.exists){settings={...settings,...sn.data()};applySettings();const a=document.activeElement;if(view.tab!=='settings'&&!(a&&a.matches&&a.matches('input,textarea,select')))render()}},()=>{});
+  applySettings();
+  if(isAdmin){
+    db.collection('shops').onSnapshot(sn=>{shops=sn.docs.map(x=>x.data());loaded=true;const a=document.activeElement;if(a&&a.matches&&a.matches('input,textarea,select'))return;if(view.tab==='settings'||view.tab==='add'||view.tab==='tenant')return;render()},()=>{loaded=true;render()});
+  }
+  view.tab=isAdmin?'shops':'tenant';
+  if(/^MK-/i.test(location.hash.slice(1)))view.tab='tenant';
+  render();
 })();
 })();
+
 </script>
