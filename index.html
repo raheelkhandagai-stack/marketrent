@@ -1,913 +1,1127 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Monthly shop rent ledger with tenant login, online payment details and signed receipts.">
-<title>Shop Rent Ledger</title>
+<title>Rent Link Market</title>
+<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Hind:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-html{color-scheme:light}
-body{margin:0}
-img{max-width:100%}
-[hidden]{display:none!important}
-.linkbtn{display:inline-flex;align-items:center;font-weight:600;text-decoration:none;color:var(--muted);padding:6px 11px;border-radius:8px;min-height:34px;font-size:.88rem}
-.linkbtn:hover{color:var(--accent)}
-.textlink{color:var(--accent);font-weight:600;background:none;border:0;padding:0;min-height:0;cursor:pointer;text-decoration:underline}
-
-/* Layout: a ledger book — month bar and collection summary on top, one row per shop, receipts open as sheets */
+/* Layout: white header with marigold rule; landlord tabs (Rent Desk / Months / Invoices / Settings), tenant account, public receipt check; ledgers, month strip, invoice overlay */
 :root{
-  --bg:#f3f6f4; --paper:#ffffff; --ink:#15231e; --muted:#5d6f68; --line:#d9e2dd; --sunk:#eaf0ec;
-  --accent:#0d5c4a; --accent-ink:#ffffff; --accent-soft:#e1efe9;
-  --ok:#1f7a45; --ok-soft:#e2f3e8; --due:#a3560b; --due-soft:#fbeedd; --bad:#b3261e; --bad-soft:#fbe4e2;
-  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
-  --f-body:"Hind","Segoe UI",system-ui,sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
-  --r:10px;
+  --paper:#ffffff; --card:#ffffff; --soft:#f6f7f6; --ink:#000000; --muted:#333333;
+  --line:#e2e6e3; --marigold:#e39a12; --marigold-ink:#2a1a00; --tint:#f3f3f3;
+  --ok:#000000; --ok-soft:#f1f1f1; --warn:#d0021b; --warn-soft:#fdeaea; --danger:#d0021b; --danger-soft:#fdeaea;
+  --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px; color-scheme:light;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0f1714; --paper:#16211d; --ink:#e4ede9; --muted:#93a59e; --line:#2a3833; --sunk:#121c19;
-  --accent:#4fbf9c; --accent-ink:#06231a; --accent-soft:#1c3a31;
-  --ok:#5fd18f; --ok-soft:#163a26; --due:#f0a453; --due-soft:#3b2a14; --bad:#f08a82; --bad-soft:#3d1c1a; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0f1714; --paper:#16211d; --ink:#e4ede9; --muted:#93a59e; --line:#2a3833; --sunk:#121c19;
-  --accent:#4fbf9c; --accent-ink:#06231a; --accent-soft:#1c3a31;
-  --ok:#5fd18f; --ok-soft:#163a26; --due:#f0a453; --due-soft:#3b2a14; --bad:#f08a82; --bad-soft:#3d1c1a; color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5}
-.wrap{max-width:1000px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
-h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
-h1{font-size:1.45rem;font-weight:800} h2{font-size:1.2rem;font-weight:800} h3{font-size:1.02rem;font-weight:600}
-p{margin:0}
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:12px;min-width:0}
-.mark{width:40px;height:40px;flex:none;border-radius:9px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--f-mono);font-weight:600;font-size:15px}
-.sub{color:var(--muted);font-size:.92rem}
-.note{color:var(--muted);font-size:.86rem}
-.err{color:var(--bad);font-size:.9rem}
-.chip{font-size:.72rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;padding:4px 10px;border-radius:99px;background:var(--accent-soft);color:var(--accent)}
-.lbl{font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:#fff}
+.wrap{max-width:1140px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--marigold);outline-offset:2px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 3px 0 var(--marigold)}
+header.top .wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-block:10px}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto;flex-wrap:wrap}
+.brand b{font-family:var(--f-display);font-weight:900;font-size:30px;letter-spacing:.02em;text-transform:uppercase;line-height:1}
+.brand b span{color:var(--marigold)}
+.brand small{font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap}
+nav.tabs button{background:transparent;border:0;padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:600;font-size:14px}
+nav.tabs button:hover{background:var(--tint)}
+nav.tabs button[aria-current="page"]{background:var(--marigold);color:var(--marigold-ink)}
+main{padding-block:24px 64px}
+h1,h2,h3{text-wrap:balance;margin:0}
+.display{font-family:var(--f-display);font-weight:800;text-transform:uppercase;letter-spacing:.01em;line-height:1}
+.h1{font-size:clamp(36px,6vw,54px)} .h2{font-size:26px} .h3{font-size:20px}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
+.muted{color:var(--muted)} .hint{font-size:12px;color:var(--muted);font-weight:400}
 .mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
-.stack{display:flex;flex-direction:column;gap:16px}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.spread{justify-content:space-between}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
-button{font:inherit;font-weight:600;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:9px 14px;cursor:pointer;min-height:40px}
-button:hover:not(:disabled){border-color:var(--accent)}
-button:disabled{opacity:.5;cursor:default}
-:is(button,input,select):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.ghost{background:transparent;border-color:transparent;color:var(--muted)}
-.danger{color:var(--bad)}
-.danger.armed{background:var(--bad-soft);border-color:var(--bad)}
-.small{padding:6px 11px;min-height:34px;font-size:.88rem}
-input,select{font:inherit;width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);min-height:42px}
-label{display:flex;flex-direction:column;gap:4px;font-size:.88rem;color:var(--muted);font-weight:500;min-width:0}
-.panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px}
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.tabs button{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;color:var(--muted);padding:8px 12px}
-.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
-/* toolbar */
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
-.monthnav{display:flex;align-items:center;gap:6px}
-.monthnav b{font-family:var(--f-display);font-size:1.08rem;min-width:9.5em;text-align:center}
-.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.filters input{width:220px;max-width:100%}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--paper)}
-.seg button{border:0;border-radius:0;min-height:38px;padding:6px 12px;font-size:.88rem;color:var(--muted)}
-.seg button+button{border-left:1px solid var(--line)}
-.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
-/* summary */
-.summary{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;display:flex;flex-direction:column;gap:12px}
-.figs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.figs>div{display:flex;flex-direction:column;gap:2px;min-width:0}
-.big{font-family:var(--f-mono);font-size:1.25rem;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.big.ok{color:var(--ok)} .big.due{color:var(--due)} .big.bad{color:var(--bad)}
-.bar{height:10px;border-radius:99px;background:var(--sunk);overflow:hidden}
-.bar span{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
-/* ledger */
-.ledger{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);overflow:hidden}
-.shop{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px 16px;border-left:4px solid var(--due)}
-.shop.paid{border-left-color:var(--ok)}
-.shop.idle{border-left-color:var(--line)}
-.shop+.shop{border-top:1px solid var(--line)}
-.who{min-width:0;display:flex;flex-direction:column;gap:2px}
-.who h3{overflow-wrap:anywhere}
-.meta{color:var(--muted);font-size:.88rem;overflow-wrap:anywhere}
-.pill{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:600;padding:3px 10px;border-radius:99px;white-space:nowrap}
-.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.due{background:var(--due-soft);color:var(--due)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.idle{background:var(--sunk);color:var(--muted)}
-.state{display:flex;flex-direction:column;gap:4px;align-items:flex-start;min-width:0}
-.acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.code{font-family:var(--f-mono);font-weight:600;letter-spacing:.08em;background:var(--accent-soft);color:var(--accent);padding:1px 7px;border-radius:6px}
-.empty{padding:30px 18px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
-.empty p{max-width:46ch}
-@media (max-width:720px){
-  .shop{grid-template-columns:1fr}
-  .acts{justify-content:flex-start}
-  .figs{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .filters input{width:100%}
-  .filters{width:100%}
-}
-/* sheets */
-.overlay{position:fixed;inset:0;background:rgba(10,20,16,.5);display:flex;align-items:flex-end;justify-content:center;z-index:20}
-.sheet{background:var(--bg);width:100%;max-width:560px;border-radius:14px 14px 0 0;padding:20px max(18px,env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px;max-height:92vh;overflow:auto}
-@media (min-width:720px){.overlay{align-items:center}.sheet{border-radius:14px}}
-.months{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
-.mchip{font-size:.85rem;padding:6px 4px;min-height:46px;line-height:1.2}
-.mchip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.mchip small{display:block;font-weight:500;opacity:.8;font-size:.72rem}
-.total{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px;border-radius:8px;background:var(--accent-soft);color:var(--accent);font-weight:600}
-/* tenant */
-.account{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
-.account .head{padding:18px;display:flex;flex-direction:column;gap:4px;border-bottom:1px dashed var(--line)}
-.status{margin:18px;padding:18px;border-radius:var(--r);display:flex;flex-direction:column;gap:6px;align-items:flex-start}
-.status.ok{background:var(--ok-soft);color:var(--ok)} .status.due{background:var(--due-soft);color:var(--due)}
-.status strong{font-family:var(--f-display);font-size:1.5rem;line-height:1.2}
-.hist{list-style:none;margin:0;padding:0 18px 18px;display:flex;flex-direction:column}
-.hist li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);flex-wrap:wrap}
-.acct{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:8px;flex-wrap:wrap;background:var(--paper)}
-.acct>div{min-width:0}
-.acct .mono{overflow-wrap:anywhere}
-.steps{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:.9rem}
-/* receipt: drawn once as an image so screen and download match exactly */
-.receipt-img{display:block;width:100%;height:auto;border-radius:8px;border:1px solid var(--line);box-shadow:0 6px 24px rgba(10,30,22,.12);background:#fff}
-.receipt-wait{aspect-ratio:760/1000;max-width:100%;display:grid;place-items:center;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}
-/* signature pad: the paper stays white in both themes, like a real receipt */
-.sigpad{display:flex;flex-direction:column;gap:8px}
-.sigpad canvas{width:100%;max-width:100%;aspect-ratio:3/1;background:#ffffff;border:1px dashed var(--line);border-radius:8px;touch-action:none;cursor:crosshair}
-.sigpad .hint{position:relative}
-.sigpad .hint span{position:absolute;left:12px;bottom:10px;font-size:.8rem;color:#8a978f;pointer-events:none}
-/* months report */
-.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--paper)}
-table{border-collapse:collapse;width:100%;font-size:.92rem}
-th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
-th{font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--sunk)}
-td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
-tbody tr:last-child td{border-bottom:0}
-tr.clickable{cursor:pointer}
-tr.clickable:hover td{background:var(--accent-soft)}
-tr.current td:first-child{box-shadow:inset 3px 0 0 var(--accent);font-weight:600}
-.minibar{width:90px;height:8px;border-radius:99px;background:var(--sunk);overflow:hidden;display:inline-block;vertical-align:middle}
-.minibar span{display:block;height:100%;background:var(--ok)}
-.grid td.cell{text-align:center;padding:6px}
-.grid th.sticky,.grid td.sticky{position:sticky;left:0;background:var(--paper);z-index:1;max-width:170px;overflow:hidden;text-overflow:ellipsis}
-.grid th.sticky{background:var(--sunk)}
-.dot{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:7px;font-weight:600;font-size:.85rem;border:0;padding:0;min-height:0}
-.dot.ok{background:var(--ok-soft);color:var(--ok)} .dot.due{background:var(--due-soft);color:var(--due)} .dot.idle{background:transparent;color:var(--line)}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;color:var(--muted);align-items:center}
-.legend span{display:inline-flex;gap:6px;align-items:center}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;z-index:30;max-width:calc(100% - 32px)}
-@media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(16px);opacity:.6}}}
-@media (prefers-reduced-motion:reduce){.bar span{transition:none}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:2px solid var(--ink);background:var(--card);color:var(--ink);border-radius:var(--r);padding:9px 16px;font-weight:600;cursor:pointer;text-decoration:none;font-size:14px;min-height:42px}
+.btn:hover{background:var(--tint)}
+.btn.primary{background:var(--ink);color:#fff} .btn.primary:hover{opacity:.9}
+.btn.gold{background:var(--marigold);border-color:var(--marigold);color:var(--marigold-ink)}
+.btn.danger{border-color:var(--danger);color:var(--danger)} .btn.danger.solid{background:var(--danger);color:#fff}
+.btn.sm{padding:5px 10px;min-height:32px;font-size:13px;border-width:1.5px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.between{justify-content:space-between}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.stack{display:grid;gap:16px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:20px;align-items:start}
+@media (max-width:880px){.two{grid-template-columns:1fr}}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fgrid .full{grid-column:1/-1}
+@media (max-width:520px){.fgrid{grid-template-columns:1fr}}
+label.fld{display:grid;gap:4px;font-size:13px;font-weight:600}
+label.fld input,label.fld select,label.fld textarea{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:9px 11px;font-weight:400;font-size:15px;width:100%;min-width:0}
+label.fld textarea{min-height:70px;resize:vertical}
+label.fld input:focus,label.fld select:focus,label.fld textarea:focus{border-color:var(--ink);outline:none}
+fieldset{border:1px dashed var(--line);border-radius:8px;padding:12px;margin:0;display:grid;gap:12px}
+legend{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;padding:0 6px}
+.msg{padding:10px 14px;border-radius:8px;font-size:14px}
+.msg.err{background:var(--danger-soft);color:var(--danger)} .msg.ok{background:var(--ok-soft);color:var(--ok)} .msg.info{background:var(--tint)}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--danger-soft);color:var(--danger)} .pill.off{background:var(--line)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px;min-width:0;display:grid;gap:2px}
+.stat b{display:block;font-family:var(--f-mono);font-size:24px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.stat span{font-size:13px;color:var(--muted)}
+.stat.alert{border-color:var(--danger)} .stat.alert b{color:var(--danger)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+table.wide{min-width:820px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;background:var(--soft)}
+td.num,th.num{text-align:right}
+tfoot th{color:#000;font-size:12px}
+tr:last-child td{border-bottom:0}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--tint)}
+.months{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px}
+.mon{border-radius:8px;padding:8px 6px;text-align:center;border:1.5px solid var(--line);background:var(--card);display:grid;gap:2px}
+.mon b{font-size:12px;font-weight:700}
+.mon span{font-size:11px}
+.mon.ok{border-color:#000}
+.mon.part,.mon.due{background:var(--danger-soft);border-color:transparent;color:var(--danger)}
+.mon.cur{outline:2px solid var(--ink);outline-offset:1px}
+.slip{border:2px dashed var(--marigold);border-radius:var(--r);padding:16px;display:grid;gap:10px;background:#fffaf0}
+.creds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.cred{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:4px;justify-items:start}
+.cred b{font-family:var(--f-mono);font-size:26px;letter-spacing:.08em}
+.big-due{display:grid;gap:4px;padding:18px 20px;border-radius:var(--r);background:var(--danger-soft);color:var(--danger);border:1px solid var(--danger)}
+.big-due .amt{font-family:var(--f-mono);font-weight:700;font-size:clamp(32px,7vw,48px);line-height:1.1}
+.big-due .eyebrow{color:var(--danger)}
+.big-due.clear{background:#fff;color:#000;border-color:#000} .big-due.clear .eyebrow{color:#000}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:14px;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:600;min-width:0;overflow-wrap:anywhere}
+.empty{border:2px dashed var(--line);border-radius:var(--r);padding:32px 20px;text-align:center;display:grid;gap:10px;justify-items:center}
+.empty h3{font-family:var(--f-display);font-size:26px;text-transform:uppercase}
+.inline-confirm{background:var(--danger-soft);border-radius:8px;padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--danger)}
+.mlist tr.sel td{background:var(--soft);font-weight:700}
+.method-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) auto auto;gap:8px;align-items:end;padding:10px 0;border-bottom:1px solid var(--line)}
+@media (max-width:620px){.method-row{grid-template-columns:1fr 1fr}}
+.paybox{border:1.5px solid #000;border-radius:var(--r);padding:14px 16px;display:grid;gap:8px}
+.paybox .pm div{white-space:pre-wrap;font-family:var(--f-mono);font-size:13px}
+ol.steps{margin:0;padding-left:20px;display:grid;gap:6px}
+.proof-thumb{width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:zoom-in;background:var(--soft)}
+.approve-box{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%}
+@media (max-width:620px){.approve-box{grid-template-columns:1fr}}
+.claim-card{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.claim-card:last-child{border-bottom:0}
+.newrcpt{border:2px solid #000;border-radius:var(--r);padding:12px 16px;display:grid;gap:8px;background:#fff}
+.code{font-family:var(--f-mono);font-weight:700;letter-spacing:.06em;white-space:nowrap}
+.verify-result{border:2px solid #000;border-radius:var(--r);padding:16px;display:grid;gap:8px}
+.verify-result.bad{border-color:var(--danger);color:var(--danger);background:var(--danger-soft)}
+.verify-result .big{font-family:var(--f-display);font-size:30px;font-weight:900;text-transform:uppercase;line-height:1}
+.overlay{position:fixed;inset:0;z-index:15;background:rgba(0,0,0,.45);overflow-y:auto;padding:calc(24px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.inv-actions{max-width:780px;margin:0 auto 10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.inv-actions .btn{background:#fff} .inv-actions .btn.primary{background:#000;color:#fff}
+.invoice{max-width:780px;margin:0 auto;background:#fff;color:#000;border-radius:6px;padding:clamp(20px,5vw,44px);display:grid;gap:22px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.inv-head{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;border-bottom:3px solid #000;padding-bottom:16px}
+.inv-head .mk{font-family:var(--f-display);font-weight:900;font-size:30px;text-transform:uppercase;line-height:1}
+.inv-head .doc{text-align:right;display:grid;gap:2px}
+.inv-head .doc b{font-family:var(--f-display);font-size:34px;font-weight:900;letter-spacing:.06em;line-height:1}
+.inv-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;font-size:14px}
+.inv-meta div{display:grid;gap:2px}
+.inv-lines{width:100%;border-collapse:collapse;font-size:14px}
+.inv-lines th{background:#000;color:#fff}
+.inv-lines td,.inv-lines th{padding:10px 12px;border-bottom:1px solid #ddd}
+.inv-lines .amt{text-align:right}
+.inv-total{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:3px solid #000;padding-top:14px}
+.inv-total .amt{font-family:var(--f-mono);font-weight:700;font-size:28px}
+.stamp{border:3px solid #000;font-family:var(--f-display);font-weight:900;font-size:24px;letter-spacing:.12em;padding:4px 14px;transform:rotate(-4deg);display:inline-block}
+.stamp.unpaid{border-color:var(--danger);color:var(--danger)}
+.inv-verify{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;border:2px dashed #000;border-radius:6px;padding:10px 14px}
+.inv-verify .code{font-size:20px}
+.inv-foot{font-size:12px;color:#333;display:grid;gap:6px;border-top:1px solid #ddd;padding-top:12px}
+.proof-view{max-width:780px;margin:0 auto;background:#fff;border-radius:6px;padding:12px;display:grid;gap:8px;justify-items:center}
+.proof-view img{max-width:100%;max-height:75vh;border-radius:4px}
+.foot{border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.foot .wrap{padding-block:16px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:#000;color:#fff;padding:10px 18px;border-radius:999px;font-weight:600;font-size:14px;z-index:20;max-width:calc(100% - 32px)}
+.back{background:none;border:0;cursor:pointer;font-weight:600;padding:0;margin-bottom:12px}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13px;font-weight:500}
+.chip[aria-pressed="true"]{background:#000;color:#fff;border-color:#000}
+@media (prefers-reduced-motion:no-preference){.btn,.chip{transition:background .15s,border-color .15s}}
 </style>
-</head>
-<body>
-<div class="wrap">
-  <header class="top">
-    <div class="brand">
-      <div class="mark" aria-hidden="true">Rs</div>
-      <div><h1>Shop Rent Ledger</h1><p class="sub" id="subtitle">Every shop's monthly rent in one place</p></div>
-    </div>
-    <div class="row"><span class="chip" id="role" hidden></span><a class="small ghost linkbtn" id="landlord" href="#landlord">Landlord login</a><button class="small ghost" id="logout" hidden>Log out</button></div>
-  </header>
-  <main id="app" aria-live="polite"><div class="panel"><p class="sub">Opening the ledger…</p></div></main>
-</div>
-<div id="toast" class="toast" role="status" hidden></div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><b>Rent <span>Link</span> Market</b><small id="mkt">Shop rent management</small></div>
+    <nav class="tabs" id="tabs"></nav>
+  </div>
+</header>
+<main class="wrap" id="app"><p class="muted">Loading…</p></main>
+<div class="overlay" id="overlay" hidden></div>
+<footer class="foot"><div class="wrap row between"><span>Rent Link Market · Shop rent, invoices, receipts and accounts</span><span id="foot-date"></span></div></footer>
+<div class="toast" id="toast" hidden></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <script>
-"use strict";
-/* =========================================================
-   0. Firebase settings: paste yours here (see README.md)
-   ========================================================= */
-const FIREBASE_CONFIG={
-  apiKey:"AIzaSyCv7sC89uHj15Y6h6_xlZWly5Kpme5Fnls",
-  authDomain:"marketrent-51e65.firebaseapp.com",
-  projectId:"marketrent-51e65",
-  storageBucket:"marketrent-51e65.firebasestorage.app",
-  messagingSenderId:"955233332025",
-  appId:"1:955233332025:web:dfa60051db828ae6d756e8",
+(() => {
+const BRAND = "Rent Link Market";
+const OLD_BRANDS = ["رینٹ لنک مارکیٹ"];
+const DEFAULT_SETTINGS = {marketName:BRAND, landlord:"", landlordPhone:"", dueDay:5,
+  methods:[{name:"Cash",details:"Pay at the market office",on:true},{name:"Bank transfer",details:"",on:true},{name:"JazzCash",details:"",on:true},{name:"Easypaisa",details:"",on:true},{name:"Cheque",details:"",on:false}]};
+const FLOORS = ["Ground floor","Basement","1st floor","2nd floor","3rd floor"];
+const REASONS = ["Monthly rent","Electricity bill","Water / gas bill","Repair / maintenance","Security deposit","Fine","Other"];
+const RENT = REASONS[0];
+const RENT_ALIASES = [RENT, "ماہانہ کرایہ"];
+const SESSION_KEY = "rlm-tenant";
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+const S = {
+  db:null, isOwner:false, ready:false, dbMissing:false, downloads:null,
+  units:[], pins:{}, counter:0, salt:"", view:"login", settings:JSON.parse(JSON.stringify(DEFAULT_SETTINGS)), draft:null, selMonth:null,
+  openUnit:null, filter:"all", invoice:null, proofView:null, proofCache:{},
+  session:null, myUnit:null, myUnsub:null, verify:null,
+  confirm:null, lastCreated:null, editing:false, msg:null, busy:false
 };
-/* =========================================================
-   1. Utilities
-   ========================================================= */
-const MONTH_NAMES=["January","February","March","April","May","June","July","August","September","October","November","December"];
-const Month={
-  key:(d=new Date())=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"),
-  label:k=>{const[y,m]=k.split("-");return MONTH_NAMES[+m-1]+" "+y},
-  short:k=>{const[y,m]=k.split("-");return MONTH_NAMES[+m-1].slice(0,3)+" "+y},
-  shift:(k,n)=>{const[y,m]=k.split("-").map(Number);return Month.key(new Date(y,m-1+n,1))},
-  /** Inclusive list of month keys from a to b. */
-  range:(a,b)=>{const out=[];for(let k=a;k<=b&&out.length<240;k=Month.shift(k,1))out.push(k);return out},
-};
-const NOW=Month.key();
-const money=n=>"Rs "+Number(n||0).toLocaleString("en-PK");
-const todayISO=()=>new Date().toLocaleDateString("en-CA");
-const prettyDate=iso=>{if(!iso)return"";const d=new Date(iso+"T00:00:00");return isNaN(d)?iso:d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})};
-const randomFrom=(chars,n)=>[...crypto.getRandomValues(new Uint8Array(n))].map(x=>chars[x%chars.length]).join("");
-const newCode=()=>randomFrom("ABCDEFGHJKMNPQRSTUVWXYZ23456789",6);
-const newPin=()=>randomFrom("0123456789",4);
-/** The tenant's record id is derived from code + PIN, so only someone holding both can open it. */
-async function recordKey(code,pin){
-  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(code.toUpperCase()+":"+pin+":karaya"));
-  return[...new Uint8Array(buf)].slice(0,12).map(x=>x.toString(16).padStart(2,"0")).join("");
-}
-const receiptNo=(code,m)=>code+"-"+m.replace("-","");
-const local={
-  get:k=>{try{return localStorage.getItem(k)}catch{return null}},
-  set:(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch{}},
-};
+const $app = document.getElementById("app");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num = n => Math.round(Number(n)||0).toLocaleString("en-PK");
+const rs = n => `<span class="mono">Rs ${num(n)}</span>`;
+const rsT = n => `Rs ${num(n)}`;
+const store = { get(k){ try { return sessionStorage.getItem(k); } catch { return null; } }, set(k,v){ try { v==null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k,v); } catch {} } };
+function toast(t){ const el = document.getElementById("toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(()=> el.hidden = true, 2600); }
+function setMsg(t,m){ S.msg = {t,m}; }
+const methodNames = () => { const m = (S.settings.methods||[]).filter(x => x.on !== false && x.name).map(x => x.name); return m.length ? m : ["Cash"]; };
+const mkName = () => { const n = S.settings.marketName; return !n || OLD_BRANDS.includes(n) ? BRAND : n; };
+const isRentReason = p => !p.reason || RENT_ALIASES.includes(p.reason);
+const reasonOf = p => isRentReason(p) ? RENT : p.reason;
+const credit = p => { if (p.status === "pending" || p.status === "rejected") return 0;
+  if (p.rentCredit != null) return Number(p.rentCredit)||0;
+  return isRentReason(p) ? Math.max(0, (Number(p.amount)||0) - (Number(p.deductAmt)||0)) : 0; };
 
-/** Tiny DOM builder: h("div",{class:"x",onclick:fn},child,...). Text is always set as text, never HTML. */
-function h(tag,attrs={},...kids){
-  const e=document.createElement(tag);
-  for(const[k,v]of Object.entries(attrs||{})){
-    if(v===false||v==null)continue;
-    if(k==="class")e.className=v;
-    else if(k.startsWith("on"))e.addEventListener(k.slice(2),v);
-    else if(k in e&&typeof v!=="string")e[k]=v;
-    else e.setAttribute(k,v===true?"":v);
-  }
-  for(const c of kids.flat(Infinity)){if(c==null||c===false)continue;e.append(c instanceof Node?c:document.createTextNode(String(c)))}
-  return e;
-}
-const $=s=>document.querySelector(s);
-function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.hidden=true,2600)}
-async function copyText(text,done="Copied"){try{await navigator.clipboard.writeText(text);toast(done)}catch{toast("Couldn't copy. Please select the text and copy it yourself.")}}
-/** A delete button that needs a second tap within 4 seconds. */
-function confirmButton(label,onConfirm){
-  const b=h("button",{class:"small danger",type:"button"},label);
-  let timer;
-  b.addEventListener("click",async()=>{
-    if(!b.classList.contains("armed")){b.classList.add("armed");b.textContent="Tap again to confirm";timer=setTimeout(()=>{b.classList.remove("armed");b.textContent=label},4000);return}
-    clearTimeout(timer);b.disabled=true;await onConfirm();
-  });
-  return b;
+/* ---------- dates ---------- */
+const today = () => new Date();
+const pad = n => String(n).padStart(2,"0");
+const todayISO = () => { const d = today(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const curMonth = () => { const d = today(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}`; };
+const monLabel = k => { const [y,m] = k.split("-"); return `${MON[+m-1]} ${y}`; };
+const fmtD = iso => { if (!iso) return "—"; const d = new Date(iso.length===10 ? iso+"T00:00:00" : iso); return isNaN(d) ? iso : `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}`; };
+const fmtWhen = p => { const t = p.at || p.date; if (!t) return "—"; const d = new Date(p.at ? t : t+"T00:00:00"); if (isNaN(d)) return String(t);
+  let s = `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}`;
+  if (p.at){ const h = d.getHours(); s += `, ${h % 12 || 12}:${pad(d.getMinutes())} ${h < 12 ? "AM" : "PM"}`; }
+  return s; };
+const sortKey = p => p.at || p.date || "";
+function monthsFrom(startISO, endISO){
+  if (!startISO) return [];
+  let [y,m] = startISO.split("-").map(Number); const end = endISO ? endISO.slice(0,7) : curMonth(); const out = [];
+  while (out.length < 240){ const k = `${y}-${pad(m)}`; if (k > end) break; out.push(k); m++; if (m>12){m=1;y++;} }
+  return out;
 }
 
-/* =========================================================
-   2. Domain logic (pure functions)
-   ========================================================= */
-const Ledger={
-  isActive:(shop,m)=>(shop.since||"0000-00")<=m,
-  paidFor:(shop,m)=>(shop.paid||{})[m]||null,
-  /** Months up to `upTo` that have no payment recorded. */
-  dueMonths:(shop,upTo=NOW)=>Month.range(shop.since||upTo,upTo).filter(k=>!Ledger.paidFor(shop,k)),
-  arrears:(shop,upTo=NOW)=>Ledger.dueMonths(shop,upTo).length*(Number(shop.rent)||0),
-  summary(shops,m){
-    const active=shops.filter(s=>Ledger.isActive(s,m));
-    const expected=active.reduce((a,s)=>a+(Number(s.rent)||0),0);
-    const collected=active.reduce((a,s)=>a+(Number(Ledger.paidFor(s,m)?.amount)||0),0);
-    const paidCount=active.filter(s=>Ledger.paidFor(s,m)).length;
-    const arrears=shops.reduce((a,s)=>a+Ledger.arrears(s),0);
-    return{expected,collected,outstanding:Math.max(0,expected-collected),paidCount,activeCount:active.length,arrears};
-  },
-  /** The only fields a tenant is allowed to see. Phone and PIN stay private. */
-  publicView:s=>({shop:s.name,tenant:s.tenant,rent:Number(s.rent)||0,code:s.code,since:s.since||NOW,paid:s.paid||{}}),
-};
-
-/* =========================================================
-   3. Data layer (all reads and writes go through here)
-   ========================================================= */
-const Data={
-  db:null,
-  watchShops:cb=>Data.db.collection("shops").onSnapshot(s=>cb(s.docs.map(d=>({id:d.id,...d.data()}))),e=>toast(e&&e.code==="permission-denied"?"This account is not the landlord account set in the Firestore rules.":"Couldn't load your shops. Please reload the page.")),
-  watchSettings:cb=>Data.db.doc("public/settings").onSnapshot(s=>cb(s.exists?s.data():{}),()=>{}),
-  watchRecord:(key,cb)=>Data.db.doc("status/"+key).onSnapshot(s=>cb(s.exists?s.data():null),()=>cb(null)),
-  /** Saves the private shop record and its public mirror; removes the old mirror when code or PIN changed. */
-  async saveShop(id,shop,previousKey){
-    const{id:_ignore,...data}=shop;
-    data.key=await recordKey(data.code,data.pin);
-    await Data.db.doc("shops/"+id).set(data);
-    await Data.db.doc("status/"+data.key).set(Ledger.publicView(data));
-    if(previousKey&&previousKey!==data.key)await Data.db.doc("status/"+previousKey).delete();
-  },
-  async deleteShop(shop){
-    if(shop.key)await Data.db.doc("status/"+shop.key).delete();
-    await Data.db.doc("shops/"+shop.id).delete();
-  },
-  saveSettings:d=>Data.db.doc("public/settings").set(d),
-};
-
-/* =========================================================
-   4. State and rendering loop
-   ========================================================= */
-const LOGIN_KEY="karaya-login";
-const state={
-  ready:false, owner:false, downloads:null,
-  shops:[], settings:{},
-  month:NOW, tab:"ledger", query:"", filter:"all", settingsDirty:false,
-  tenant:{key:null,record:undefined,unsub:null,error:""},
-};
-let frame=0;
-function render(){if(!frame)frame=requestAnimationFrame(()=>{frame=0;draw()})}
-let mounted=null; // which screen is currently mounted, so we update instead of rebuilding inputs
-function draw(){
-  if(!state.ready)return;
-  const app=$("#app"), signedIn=state.owner||!!state.tenant.record, onLandlordPage=location.hash==="#landlord";
-  if(state.settings.market)$("#subtitle").textContent=state.settings.market;
-  const role=$("#role");role.textContent=state.owner?"Landlord":"Tenant";role.hidden=!signedIn;
-  $("#logout").hidden=!signedIn;
-  $("#landlord").hidden=signedIn||!!state.tenant.key||onLandlordPage;
-  if(state.owner){
-    if(mounted!=="owner"){app.replaceChildren(OwnerScreen.mount());mounted="owner"}
-    OwnerScreen.update();
-  }else if(state.tenant.key){
-    mounted="tenant";app.replaceChildren(TenantScreen(state.tenant.record));
-  }else if(onLandlordPage){
-    if(mounted!=="landlord"){app.replaceChildren(LandlordLoginScreen());mounted="landlord"}
-  }else if(mounted!=="login"){
-    app.replaceChildren(LoginScreen());mounted="login";
-  }
+/* ---------- rent maths ---------- */
+function calc(u){
+  if (!u || (u.status !== "occupied" && u.status !== "left") || !u.startDate) return null;
+  const rent = Number(u.rent)||0;
+  const months = monthsFrom(u.startDate, u.status === "left" ? u.endDate : "");
+  const confirmed = (u.payments||[]).filter(p => p.status !== "pending" && p.status !== "rejected");
+  const byMonth = {}; confirmed.forEach(p => byMonth[p.month] = (byMonth[p.month]||0) + credit(p));
+  const paid = confirmed.reduce((s,p)=>s+credit(p),0);
+  const other = confirmed.reduce((s,p)=>s+(Number(p.amount)||0)-credit(p),0);
+  const received = confirmed.reduce((s,p)=>s+(Number(p.amount)||0),0);
+  const expected = rent * months.length;
+  const balance = Math.max(0, expected - paid), advance = Math.max(0, paid - expected);
+  const cm = curMonth(), curPaid = byMonth[cm]||0, dueDay = Number(u.dueDay)||5;
+  let cur;
+  if (u.status === "left") cur = {k:"off", t:"Left"};
+  else if (!months.includes(cm)) cur = {k:"off", t:"Not started"};
+  else if (curPaid >= rent) cur = {k:"ok", t:"Paid"};
+  else if (curPaid > 0) cur = {k:"warn", t:"Part paid"};
+  else if (today().getDate() > dueDay) cur = {k:"bad", t:"Late"};
+  else cur = {k:"warn", t:`Due by ${dueDay}th`};
+  const unpaidMonths = months.filter(k => (byMonth[k]||0) < rent && (k < cm || today().getDate() > dueDay)).length;
+  const paidMonths = months.filter(k => (byMonth[k]||0) >= rent).length;
+  return {rent, months, byMonth, paid, expected, balance, advance, cur, curPaid, unpaidMonths, paidMonths, other, received};
+}
+const isLate = (u,k) => k < curMonth() || today().getDate() > (Number(u.dueDay)||5);
+function monthStrip(u, c){
+  return `<div class="months">${c.months.slice(-12).map(k => { const p = c.byMonth[k]||0;
+    const cls = p >= c.rent ? "ok" : p > 0 ? "part" : isLate(u,k) ? "due" : "";
+    return `<div class="mon ${cls} ${k===curMonth()?"cur":""}" title="${monLabel(k)}"><b>${monLabel(k)}</b><span>${p>=c.rent?"Paid":p>0?"Part":isLate(u,k)?"Unpaid":"—"}</span></div>`; }).join("")}</div>`;
+}
+function fullHistory(u, c){
+  const pays = (u.payments||[]).filter(p => p.status !== "rejected");
+  const rows = [...c.months].reverse().map(k => {
+    const ps = pays.filter(p => p.month === k).sort((a,b)=>sortKey(a).localeCompare(sortKey(b)));
+    const got = c.byMonth[k]||0, left = Math.max(0, c.rent - got), late = isLate(u,k);
+    const st = got >= c.rent ? ["ok","Paid"] : got > 0 ? ["warn","Part paid"] : late ? ["bad","Unpaid"] : ["warn","Not due yet"];
+    return `<tr style="${left&&late?"color:var(--danger)":""}"><td><strong>${monLabel(k)}</strong></td><td class="num">${rs(c.rent)}</td><td class="num">${got?rs(got):"—"}</td>
+      <td class="num" style="${left&&late?"font-weight:700":""}">${left?rs(left):"—"}</td>
+      <td>${ps.length?ps.map(p=>`<div style="font-size:13px"><span class="mono">${esc(fmtWhen(p))}</span>${p.rcptNo?` · <span class="code" style="font-size:12px">${esc(p.rcptNo)}</span>`:""}${p.status==="pending"?' <span class="pill warn">Awaiting approval</span>':""}</div>`).join(""):'<span class="hint">—</span>'}</td>
+      <td><span class="pill ${st[0]}">${st[1]}</span></td><td><button type="button" class="btn sm" data-inv="${esc(u.id)}|${k}">Invoice</button></td></tr>`; }).join("");
+  return `<div class="tbl-wrap"><table class="wide"><thead><tr><th>Month</th><th class="num">Rent</th><th class="num">Paid</th><th class="num">Remaining</th><th>Paid on · receipt no.</th><th>Status</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr><th>Total (${c.months.length} months)</th><th class="num">${rs(c.expected)}</th><th class="num">${rs(c.paid)}</th><th class="num" style="${c.balance?"color:var(--danger)":""}">${rs(c.balance)}</th><th colspan="3">${c.advance?"Advance "+rs(c.advance):""}</th></tr></tfoot></table></div>`;
 }
 
-/* =========================================================
-   5. Shared components
-   ========================================================= */
-function openSheet(title,build){
-  const overlay=h("div",{class:"overlay"});
-  const prevFocus=document.activeElement;
-  const close=()=>{overlay.remove();document.removeEventListener("keydown",onKey);prevFocus?.focus?.()};
-  const onKey=e=>{if(e.key==="Escape")close()};
-  overlay.addEventListener("click",e=>{if(e.target===overlay)close()});
-  document.addEventListener("keydown",onKey);
-  overlay.append(h("div",{class:"sheet",role:"dialog","aria-modal":"true","aria-label":title},
-    h("div",{class:"row spread"},h("h2",{},title),h("button",{class:"small ghost",type:"button",onclick:close},"Close")),
-    build(close)));
-  document.body.append(overlay);
-  overlay.querySelector("input,select,button.primary")?.focus();
-  return close;
+/* ---------- receipt numbers & verification codes ---------- */
+async function sha256hex(s){
+  if (window.crypto?.subtle){ const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
+  let h1 = 0x811c9dc5, h2 = 0x01000193; for (const ch of s){ h1 = Math.imul(h1 ^ ch.charCodeAt(0), 16777619)>>>0; h2 = Math.imul(h2 ^ ch.charCodeAt(0), 2246822519)>>>0; }
+  return h1.toString(16).padStart(8,"0") + h2.toString(16).padStart(8,"0");
 }
-function field(label,input,hint){return h("label",{},label,input,hint?h("span",{class:"note"},hint):null)}
-
-/* ---------- receipt ---------- */
-/** 25000 -> "Twenty-Five Thousand", using the Pakistani lakh / crore system. */
-function amountInWords(n){
-  n=Math.floor(Math.abs(Number(n)||0));
-  if(n===0)return"Zero";
-  const ones=["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
-  const tens=["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
-  const two=x=>x<20?ones[x]:tens[Math.floor(x/10)]+(x%10?"-"+ones[x%10]:"");
-  const three=x=>(x>=100?ones[Math.floor(x/100)]+" Hundred"+(x%100?" ":""):"")+(x%100?two(x%100):"");
-  const parts=[];
-  for(const[size,name]of[[1e7,"Crore"],[1e5,"Lakh"],[1e3,"Thousand"]]){
-    if(n>=size){const q=Math.floor(n/size);parts.push((q>=100?three(q):two(q))+" "+name);n%=size}
-  }
-  if(n)parts.push(three(n));
-  return parts.join(" ");
+const normCode = s => String(s||"").toUpperCase().replace(/[^0-9A-F]/g,"");
+const fmtCode = s => { const n = normCode(s); return n ? n.slice(0,4) + "-" + n.slice(4,8) : ""; };
+const normNo = s => String(s||"").toUpperCase().replace(/\s+/g,"");
+async function ensureSecrets(){
+  if (S.salt) return;
+  const sec = await S.db.doc("admin/secret").get();
+  if (sec.exists && sec.data().salt) S.salt = sec.data().salt;
+  else { const a = new Uint8Array(16); crypto.getRandomValues(a); S.salt = [...a].map(x=>x.toString(16).padStart(2,"0")).join(""); await write(()=>S.db.doc("admin/secret").set({salt:S.salt})); }
+  const ct = await S.db.doc("admin/counter").get(); S.counter = ct.exists ? Number(ct.data().n)||0 : 0;
 }
-
-function openReceipt(rec,m){
-  const p=rec.paid?.[m];if(!p)return;
-  openSheet("Rent receipt",()=>{
-    const holder=h("div",{class:"receipt-wait"},"Preparing receipt…");
-    const save=h("button",{class:"primary",type:"button",disabled:true},"Download receipt (image)");
-    let blob=null;
-    drawReceipt(rec,m,p,state.settings).then(b=>{
-      blob=b;
-      const img=h("img",{class:"receipt-img",src:URL.createObjectURL(b),alt:"Rent receipt "+(p.no||"")+": "+money(p.amount)+" for "+rec.shop+", "+Month.label(m)+", paid "+prettyDate(p.date)});
-      holder.replaceWith(img);save.disabled=false;
-    }).catch(()=>{holder.textContent="Couldn't prepare the receipt. Please try again."});
-    save.addEventListener("click",async()=>{
-      if(!blob)return;save.disabled=true;
-      try{await state.downloads.save({filename:"Rent-receipt-"+(p.no||m)+".png",data:blob});toast("Receipt saved")}
-      catch(e){toast(e?.code==="declined"?"Download cancelled":"Couldn't download. Take a screenshot instead.")}
-      save.disabled=false;
-    });
-    return h("div",{class:"stack"},holder,state.downloads?save:h("p",{class:"note"},"Take a screenshot to keep this receipt."));
-  });
+// Owner only: allocate the next receipt number and its verification code, and register it.
+async function issueReceipt(u, p){
+  await ensureSecrets();
+  const year = new Date(p.at || Date.now()).getFullYear();
+  const seq = S.counter + 1;
+  const no = `RCT-${year}-${String(seq).padStart(6,"0")}`;
+  const code = fmtCode((await sha256hex(`${S.salt}|${no}|${u.id}|${p.id}|${p.amount}|${p.at}`)).slice(0,8));
+  await write(()=>S.db.doc("admin/counter").set({n:seq}));
+  S.counter = seq;
+  await write(()=>S.db.doc("receipts/"+no).set({code, shopCode:u.id, shopNo:u.shopNo, tenant:u.tenant, amount:Number(p.amount)||0, rentCredit:credit({...p, status:"confirmed"}), reason:reasonOf(p), month:p.month, paidAt:p.at||"", approvedAt:p.confirmedAt||new Date().toISOString(), pid:p.id, status:"valid"}));
+  return {rcptNo:no, rcptCode:code};
 }
-
-/** Draws the receipt as a printable image. Fixed paper colours: a receipt looks the same in light and dark mode. */
-async function drawReceipt(rec,m,p,st){
-  try{await document.fonts.ready}catch{}
-  const C={ink:"#15231e",muted:"#5d6f68",line:"#d5ded9",band:"#0d5c4a",soft:"#e9f3ee",stamp:"#1f7a45",sig:"#1b2a6b"};
-  const F={display:"'Bricolage Grotesque',sans-serif",body:"Hind,sans-serif",mono:"'IBM Plex Mono',monospace"};
-  const W=760,H=1000,PAD=48,c=document.createElement("canvas");
-  c.width=W*2;c.height=H*2;const g=c.getContext("2d");g.scale(2,2);
-  const text=(s,x,y,font,color,align="left")=>{g.font=font;g.fillStyle=color;g.textAlign=align;g.fillText(s,x,y);g.textAlign="left"};
-  const fit=(s,maxW,font)=>{g.font=font;s=String(s??"");if(g.measureText(s).width<=maxW)return s;while(s.length&&g.measureText(s+"…").width>maxW)s=s.slice(0,-1);return s+"…"};
-  const wrap=(s,x,y,maxW,lh,font,color)=>{g.font=font;g.fillStyle=color;let line="";for(const w of s.split(" ")){const t=line?line+" "+w:w;if(g.measureText(t).width>maxW&&line){g.fillText(line,x,y);y+=lh;line=w}else line=t}g.fillText(line,x,y);return y+lh};
-  const rule=(y,dash)=>{g.setLineDash(dash?[5,5]:[]);g.strokeStyle=C.line;g.lineWidth=1;g.beginPath();g.moveTo(PAD,y);g.lineTo(W-PAD,y);g.stroke();g.setLineDash([])};
-  const no=p.no||receiptNo(rec.code||"",m);
-
-  // paper and perforated edge
-  g.fillStyle="#ffffff";g.fillRect(0,0,W,H);
-  g.strokeStyle=C.line;g.lineWidth=1;g.strokeRect(10.5,10.5,W-21,H-21);
-
-  // header band
-  g.fillStyle=C.band;g.fillRect(10,10,W-20,132);
-  text(fit(st.market||"Shop Rent Ledger",W-PAD*2-220,"800 32px "+F.display),PAD,70,"800 32px "+F.display,"#ffffff");
-  text("RENT RECEIPT",PAD,104,"600 15px "+F.body,"#cfe7dd");
-  text("No. "+no,W-PAD,70,"600 17px "+F.mono,"#ffffff","right");
-  text("Issued "+prettyDate(p.date),W-PAD,100,"500 15px "+F.body,"#cfe7dd","right");
-
-  // statement
-  let y=wrap("Received with thanks from "+rec.tenant+" the sum below, as rent for "+rec.shop+" for the month of "+Month.label(m)+".",PAD,196,W-PAD*2-150,30,"500 20px "+F.body,C.ink);
-
-  // amount box
-  y+=8;
-  g.fillStyle=C.soft;g.beginPath();g.roundRect?g.roundRect(PAD,y,W-PAD*2,128,12):g.rect(PAD,y,W-PAD*2,128);g.fill();
-  text("AMOUNT RECEIVED",PAD+24,y+34,"600 13px "+F.body,C.muted);
-  text(money(p.amount),PAD+24,y+82,"600 44px "+F.mono,C.ink);
-  text(fit("Rupees "+amountInWords(p.amount)+" only",W-PAD*2-200,"italic 500 17px "+F.body),PAD+24,y+112,"italic 500 17px "+F.body,C.muted);
-
-  // round PAID stamp over the box
-  g.save();g.translate(W-PAD-86,y+64);g.rotate(-0.18);g.globalAlpha=.9;
-  g.strokeStyle=C.stamp;g.lineWidth=3;g.beginPath();g.arc(0,0,62,0,Math.PI*2);g.stroke();
-  g.lineWidth=1.5;g.beginPath();g.arc(0,0,54,0,Math.PI*2);g.stroke();
-  text("PAID",0,10,"800 32px "+F.display,C.stamp,"center");
-  text(Month.short(m).toUpperCase(),0,32,"600 12px "+F.body,C.stamp,"center");
-  text("RENT",0,-22,"600 12px "+F.body,C.stamp,"center");
-  g.restore();
-
-  // details
-  y+=170;
-  const details=[["Shop",rec.shop],["Tenant",rec.tenant],["Rent month",Month.label(m)],["Payment date",prettyDate(p.date)],["Payment method",p.method],["Transaction ID",p.txn||"—"],["Monthly rent",money(rec.rent)]];
-  text("PAYMENT DETAILS",PAD,y,"600 13px "+F.body,C.muted);y+=14;rule(y);
-  for(const[label,val]of details){
-    y+=38;text(label,PAD,y,"500 18px "+F.body,C.muted);
-    text(fit(val,W-PAD*2-220,"600 19px "+F.body),W-PAD,y,"600 19px "+F.body,C.ink,"right");
-    y+=14;rule(y,true);
-  }
-
-  // signature block (bottom right) and thanks (bottom left)
-  const sigY=H-170, sigX=W-PAD-260;
-  if(st.signature){
-    try{const img=new Image();img.src=st.signature;await img.decode();
-      const s=Math.min(240/img.width,90/img.height);const w=img.width*s,hh=img.height*s;
-      g.drawImage(img,sigX+(260-w)/2,sigY-hh+6,w,hh)}catch{}
-  }
-  g.strokeStyle=C.ink;g.lineWidth=1.2;g.beginPath();g.moveTo(sigX,sigY+14);g.lineTo(W-PAD,sigY+14);g.stroke();
-  text(fit(st.owner||"Landlord",260,"600 17px "+F.body),sigX+130,sigY+40,"600 17px "+F.body,C.ink,"center");
-  text("Landlord's signature",sigX+130,sigY+62,"500 14px "+F.body,C.muted,"center");
-  text("Thank you for your payment.",PAD,sigY+14,"600 18px "+F.body,C.ink);
-  if(st.whatsapp)text("Questions: WhatsApp "+st.whatsapp,PAD,sigY+40,"500 15px "+F.body,C.muted);
-
-  // footer
-  rule(H-60);
-  text("This receipt was issued from Shop Rent Ledger and is valid with the landlord's signature.",W/2,H-34,"500 13px "+F.body,C.muted,"center");
-  return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error("toBlob")),"image/png"));
-}
-
-/** Draw-or-upload signature pad. value() returns a trimmed transparent PNG data URL, or "" when empty. */
-function SignaturePad(initial,onChange){
-  const W=600,H=200,c=h("canvas",{width:W*2,height:H*2,"aria-label":"Signature pad: draw your signature with your finger or mouse"});
-  const g=c.getContext("2d");g.scale(2,2);
-  let hasInk=false,drawing=false,last=null;
-  const pen=()=>{g.strokeStyle="#1b2a6b";g.lineWidth=2.6;g.lineCap="round";g.lineJoin="round"};
-  const pos=e=>{const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}};
-  const placeImage=src=>new Promise(res=>{const img=new Image();img.onload=()=>{g.clearRect(0,0,W,H);const s=Math.min((W-20)/img.width,(H-20)/img.height);g.drawImage(img,(W-img.width*s)/2,(H-img.height*s)/2,img.width*s,img.height*s);hasInk=true;res()};img.onerror=()=>res();img.src=src});
-  c.addEventListener("pointerdown",e=>{e.preventDefault();c.setPointerCapture(e.pointerId);drawing=true;last=pos(e);pen();g.beginPath();g.arc(last.x,last.y,1.2,0,Math.PI*2);g.fillStyle="#1b2a6b";g.fill();hasInk=true;onChange()});
-  c.addEventListener("pointermove",e=>{if(!drawing)return;const p=pos(e);pen();g.beginPath();g.moveTo(last.x,last.y);g.lineTo(p.x,p.y);g.stroke();last=p});
-  const end=()=>{drawing=false};c.addEventListener("pointerup",end);c.addEventListener("pointercancel",end);
-  if(initial)placeImage(initial);
-  const file=h("input",{type:"file",accept:"image/*",hidden:true,onchange:e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=async()=>{await placeImage(r.result);onChange()};r.readAsDataURL(f);e.target.value=""}});
-  const el=h("div",{class:"sigpad"},
-    h("div",{class:"hint"},c,h("span",{},"Sign here")),
-    h("div",{class:"row"},
-      h("button",{class:"small",type:"button",onclick:()=>{g.clearRect(0,0,W,H);hasInk=false;onChange()}},"Clear"),
-      h("button",{class:"small",type:"button",onclick:()=>file.click()},"Upload a photo of my signature"),file));
-  function value(){
-    if(!hasInk)return"";
-    const src=g.getImageData(0,0,c.width,c.height),d=src.data;
-    let minX=c.width,minY=c.height,maxX=-1,maxY=-1;
-    for(let i=0;i<d.length;i+=4){
-      if(d[i]>225&&d[i+1]>225&&d[i+2]>225)d[i+3]=0; // drop paper background from uploaded photos
-      if(d[i+3]>20){const px=(i/4)%c.width,py=Math.floor(i/4/c.width);if(px<minX)minX=px;if(px>maxX)maxX=px;if(py<minY)minY=py;if(py>maxY)maxY=py}
+let migrating = false;
+async function migrateReceipts(){
+  if (migrating || !S.isOwner || !S.db) return;
+  const todo = S.units.flatMap(u => (u.payments||[]).filter(p => (p.status==="confirmed" || !p.status) && !p.rcptNo).map(p => ({u, p})));
+  if (!todo.length) return;
+  migrating = true;
+  try {
+    const byUnit = {};
+    todo.sort((a,b)=>sortKey(a.p).localeCompare(sortKey(b.p)));
+    for (const {u,p} of todo){ const r = await issueReceipt(u, p); (byUnit[u.id] ||= {})[p.id] = r; }
+    for (const id of Object.keys(byUnit)){
+      const snap = await S.db.doc("units/"+id).get(); if (!snap.exists) continue;
+      const pays = (snap.data().payments||[]).map(p => byUnit[id][p.id] ? {...p, ...byUnit[id][p.id]} : p);
+      await write(()=>S.db.doc("units/"+id).update({payments:pays}));
     }
-    if(maxX<0)return"";
-    const tmp=document.createElement("canvas");tmp.width=c.width;tmp.height=c.height;tmp.getContext("2d").putImageData(src,0,0);
-    const bw=maxX-minX+1,bh=maxY-minY+1,s=Math.min(1,500/bw,170/bh);
-    const out=document.createElement("canvas");out.width=Math.ceil(bw*s);out.height=Math.ceil(bh*s);
-    out.getContext("2d").drawImage(tmp,minX,minY,bw,bh,0,0,out.width,out.height);
-    return out.toDataURL("image/png");
+  } catch {}
+  migrating = false;
+}
+async function voidReceipt(no){ if (!no) return; try { const r = await S.db.doc("receipts/"+no).get(); if (r.exists) await write(()=>S.db.doc("receipts/"+no).update({status:"cancelled", cancelledAt:new Date().toISOString()})); } catch {} }
+
+/* ---------- invoices & receipts ---------- */
+function findUnit(id){ return S.units.find(x=>x.id===id) || (S.myUnit && S.myUnit.id===id ? S.myUnit : null); }
+function invoiceData(u, k){
+  const c = calc(u); if (!c || !c.months.includes(k)) return null;
+  const idx = c.months.indexOf(k);
+  const paidBefore = (u.payments||[]).filter(p => p.status!=="pending" && p.status!=="rejected" && p.month < k).reduce((s,p)=>s+credit(p),0);
+  const before = c.rent*idx - paidBefore, thisPaid = c.byMonth[k]||0;
+  const lines = [[`Monthly rent — ${monLabel(k)}`, c.rent]];
+  if (before > 0) lines.push(["Previous balance", before]);
+  if (before < 0) lines.push(["Previous advance", before]);
+  const gross = c.rent + before, total = gross - thisPaid;
+  return {type:"INV", no:`INV-${u.id}-${k.replace("-","")}`, issued:`${k}-01`, due:`${k}-${pad(Number(u.dueDay)||5)}`, month:k,
+    u, lines, gross, paid:thisPaid, total:Math.max(0,total), credit: total<0 ? -total : 0, isPaid: total <= 0,
+    pays:(u.payments||[]).filter(p=>p.month===k && credit(p) > 0)};
+}
+function receiptData(u, pid){
+  const p = (u.payments||[]).find(x=>x.id===pid); if (!p) return null; const c = calc(u);
+  const amt = Number(p.amount)||0, cr = p.status==="confirmed" || !p.status ? credit(p) : (isRentReason(p) ? amt : 0);
+  const lines = [[`Amount received — ${reasonOf(p)}`, amt]];
+  const ded = amt - cr;
+  if (ded > 0) lines.push([`Deducted — ${p.deductReason || (isRentReason(p) ? "Other" : reasonOf(p))}`, -ded]);
+  lines.push([`Credited to rent — ${monLabel(p.month)}`, cr]);
+  return {type:"RCT", no:p.rcptNo || "Number pending", code:p.rcptCode || "", month:p.month, u, p,
+    lines, total:amt, rentCredit:cr, deducted:ded, balance:c?.balance||0,
+    isPaid:p.status!=="pending" && p.status!=="rejected", pending:p.status==="pending", rejected:p.status==="rejected"};
+}
+const stampText = d => d.rejected ? "REJECTED" : d.pending ? "PENDING" : d.isPaid ? "PAID" : "UNPAID";
+function invoiceHTML(d){
+  const st = S.settings, u = d.u, inv = d.type==="INV";
+  const methods = (st.methods||[]).filter(m=>m.on!==false && m.name);
+  return `<article class="invoice" id="inv-doc">
+    <div class="inv-head">
+      <div><div class="mk">${esc(mkName())}</div>
+        <div class="hint" style="color:#333">${esc(st.landlord||"")}${st.landlordPhone?` · <span class="mono">${esc(st.landlordPhone)}</span>`:""}</div></div>
+      <div class="doc"><b>${inv?"INVOICE":"RECEIPT"}</b><span class="code">${esc(d.no)}</span></div>
+    </div>
+    <div class="inv-meta">
+      <div><span class="eyebrow">Tenant</span><strong>${esc(u.tenant)}</strong><span class="mono">${esc(u.phone||"")}</span>${u.business?`<span>${esc(u.business)}</span>`:""}</div>
+      <div><span class="eyebrow">Shop</span><strong>${esc(u.shopNo)}</strong><span>${esc([u.floor,u.size].filter(Boolean).join(" · "))}</span><span>Shop code <span class="mono">${esc(u.id)}</span></span></div>
+      <div><span class="eyebrow">${inv?"Dates":"Payment"}</span>${inv?`<span>Issued: <strong>${fmtD(d.issued)}</strong></span><span>Due by: <strong>${fmtD(d.due)}</strong></span><span>Month: <strong>${monLabel(d.month)}</strong></span>`
+        :`<span>Paid: <strong>${esc(fmtWhen(d.p))}</strong></span><span>Method: <strong>${esc(d.p.method)}</strong></span><span>Purpose: <strong>${esc(reasonOf(d.p))}</strong></span>${d.p.note?`<span>Note: ${esc(d.p.note)}</span>`:""}${d.p.confirmedAt&&d.p.status==="confirmed"?`<span>Approved: ${esc(fmtWhen({at:d.p.confirmedAt}))}</span>`:""}`}</div>
+    </div>
+    <div style="overflow-x:auto"><table class="inv-lines"><thead><tr><th>Description</th><th class="amt">Amount</th></tr></thead><tbody>
+      ${d.lines.map(([l,a])=>`<tr><td>${esc(l)}</td><td class="amt">${a<0?"− "+rs(-a):rs(a)}</td></tr>`).join("")}
+      ${inv?`<tr><td><strong>Total</strong></td><td class="amt"><strong>${rs(d.gross)}</strong></td></tr>
+        ${d.pays.map(p=>`<tr><td>Paid · ${esc(fmtWhen(p))} · ${esc(p.method)}${p.rcptNo?` · ${esc(p.rcptNo)}`:""}</td><td class="amt">− ${rs(credit(p))}</td></tr>`).join("")}`:""}
+    </tbody></table></div>
+    <div class="inv-total">
+      <div><span class="eyebrow">${inv?"Amount due":"Amount received"}</span><div class="amt" style="${inv&&!d.isPaid?"color:var(--danger)":""}">Rs ${num(d.total)}</div>
+        ${inv&&d.credit?`<span class="hint">Advance remaining: ${rs(d.credit)}</span>`:""}${!inv?`<span class="hint">Current total balance: <span style="${d.balance?"color:var(--danger)":""}">${rs(d.balance)}</span></span>`:""}</div>
+      <span class="stamp ${d.isPaid?"":"unpaid"}">${stampText(d)}</span>
+    </div>
+    ${!inv && d.code ? `<div class="inv-verify"><div><span class="eyebrow">Verification code</span><div class="code">${esc(d.code)}</div></div><div class="hint" style="max-width:34ch">Check this receipt is genuine on the "Verify Receipt" page using receipt no. <span class="mono">${esc(d.no)}</span> and this code.</div></div>` : ""}
+    ${!inv && !d.code && d.isPaid ? `<div class="hint">The receipt number and verification code are being created. Reopen this receipt in a moment.</div>` : ""}
+    ${inv&&!d.isPaid&&methods.length?`<div class="inv-foot"><strong style="color:#000">How to pay</strong>${methods.map(m=>`<div><strong>${esc(m.name)}</strong>${m.details?` — <span class="mono">${esc(m.details)}</span>`:""}</div>`).join("")}</div>`:""}
+    <div class="inv-foot"><span>This is a computer-generated ${inv?"invoice":"receipt"} and needs no signature. ${esc(mkName())}</span></div>
+  </article>`;
+}
+function invText(d){
+  const st = S.settings, u = d.u;
+  const head = `${mkName()}\n${d.type==="INV"?"INVOICE":"RECEIPT"} ${d.no}\n\n${u.tenant} · ${u.shopNo} (Shop code ${u.id})\n`;
+  if (d.type === "INV") return head + `Month: ${monLabel(d.month)}\nDue by: ${fmtD(d.due)}\n\n${d.lines.map(([l,a])=>`${l}: ${rsT(a)}`).join("\n")}\nPaid: ${rsT(d.paid)}\nAmount due: ${rsT(d.total)}\nStatus: ${stampText(d)}${!d.isPaid?"\n\nHow to pay:\n"+(st.methods||[]).filter(m=>m.on!==false&&m.name).map(m=>`${m.name}${m.details?": "+m.details:""}`).join("\n"):""}`;
+  return head + `Purpose: ${reasonOf(d.p)}\nAmount received: ${rsT(d.total)}${d.deducted?`\nDeducted (${d.p.deductReason||"Other"}): ${rsT(d.deducted)}`:""}\nCredited to rent (${monLabel(d.month)}): ${rsT(d.rentCredit)}\nPaid: ${fmtWhen(d.p)}\nMethod: ${d.p.method}\nStatus: ${stampText(d)}\nTotal balance: ${rsT(d.balance)}${d.code?`\n\nVerification code: ${d.code}`:""}`;
+}
+function curInvoice(){ const o = S.invoice; if (!o) return null; const u = findUnit(o.id); if (!u) return null; return o.pid ? receiptData(u, o.pid) : invoiceData(u, o.month); }
+function renderOverlay(){
+  const el = document.getElementById("overlay");
+  if (S.proofView){ const img = S.proofCache[S.proofView];
+    el.innerHTML = `<div class="inv-actions"><button type="button" class="btn" data-close-inv>Close</button></div><div class="proof-view">${img?`<img src="${esc(img)}" alt="Payment proof">`:`<p class="muted">Loading proof…</p>`}<span class="hint">Payment proof uploaded by the tenant</span></div>`;
+    el.hidden = false; document.body.style.overflow = "hidden"; return; }
+  const d = curInvoice();
+  if (!d){ el.hidden = true; el.innerHTML = ""; document.body.style.overflow = ""; return; }
+  const wa = waLink(d.u.phone, invText(d));
+  el.innerHTML = `<div class="inv-actions">
+      ${window.jspdf && window.html2canvas && S.downloads ? `<button type="button" class="btn primary" data-pdf>Download PDF</button>` : ""}
+      ${S.isOwner && wa ? `<a class="btn" target="_blank" rel="noopener" href="${esc(wa)}">Send on WhatsApp</a>` : ""}
+      <button type="button" class="btn" data-copy="${esc(invText(d))}">Copy text</button>
+      <button type="button" class="btn" data-close-inv>Close</button></div>${invoiceHTML(d)}`;
+  el.hidden = false; document.body.style.overflow = "hidden";
+}
+async function downloadPDF(btn){
+  const d = curInvoice(), node = document.getElementById("inv-doc"); if (!d || !node) return;
+  btn.disabled = true; btn.textContent = "Creating PDF…";
+  try {
+    if (document.fonts?.ready) await document.fonts.ready;
+    const canvas = await window.html2canvas(node, {scale:2, backgroundColor:"#ffffff", useCORS:true, logging:false});
+    const { jsPDF } = window.jspdf; const pdf = new jsPDF({unit:"pt", format:"a4"});
+    const W = 595.28, H = 841.89, m = 28, w = W - m*2, h = canvas.height * w / canvas.width;
+    const img = canvas.toDataURL("image/jpeg", 0.92);
+    if (h <= H - m*2) pdf.addImage(img, "JPEG", m, m, w, h);
+    else { const s = (H - m*2) / h; pdf.addImage(img, "JPEG", m + (w - w*s)/2, m, w*s, H - m*2); }
+    await S.downloads.save({filename:`${d.no.replace(/\s+/g,"-")}.pdf`, data:pdf.output("blob")}); toast("PDF saved");
+  } catch(e){ if (e?.code !== "declined") toast(e?.code==="rate_limited" ? "Please wait a moment and try again" : "Could not create the PDF"); }
+  btn.disabled = false; btn.textContent = "Download PDF";
+}
+function invoiceList(u, c){
+  return `<div class="tbl-wrap"><table><thead><tr><th>Month</th><th class="num">Amount due</th><th>Status</th><th></th></tr></thead><tbody>
+    ${[...c.months].reverse().map(k=>{ const d = invoiceData(u,k); return `<tr style="${d.isPaid?"":"color:var(--danger)"}"><td>${monLabel(k)}<div class="hint mono">${esc(d.no)}</div></td><td class="num">${rs(d.total)}</td><td><span class="pill ${d.isPaid?"ok":"bad"}">${d.isPaid?"Paid":"Unpaid"}</span></td><td><button type="button" class="btn sm" data-inv="${esc(u.id)}|${k}">Invoice</button></td></tr>`; }).join("")}
+  </tbody></table></div>`;
+}
+function receiptList(u){
+  const list = (u.payments||[]).filter(p => p.status==="confirmed" || !p.status).sort((a,b)=>sortKey(b).localeCompare(sortKey(a)));
+  if (!list.length) return `<div class="empty"><p class="muted">No receipts yet. Receipts appear here once a payment is approved.</p></div>`;
+  return `<div class="tbl-wrap"><table class="wide"><thead><tr><th>Receipt no.</th><th>Verification code</th><th>Paid</th><th>Purpose</th><th class="num">Amount</th><th class="num">To rent</th><th></th></tr></thead><tbody>
+    ${list.map(p=>`<tr><td class="code">${esc(p.rcptNo||"Pending")}</td><td class="code">${esc(p.rcptCode||"—")}</td><td class="mono" style="font-size:13px">${esc(fmtWhen(p))}</td><td>${esc(reasonOf(p))} · ${monLabel(p.month)}</td><td class="num">${rs(p.amount)}</td><td class="num">${rs(credit(p))}</td><td><button type="button" class="btn sm" data-rcpt="${esc(u.id)}|${esc(p.id)}">Receipt</button></td></tr>`).join("")}
+  </tbody></table></div>`;
+}
+function payBox(){
+  const st = S.settings, ms = (st.methods||[]).filter(m => m.on !== false && m.name);
+  return `<div class="paybox"><span class="eyebrow">How to pay rent</span>
+    ${ms.map(m=>`<div class="pm"><strong>${esc(m.name)}</strong>${m.details?`<div>${esc(m.details)}</div>`:""}</div>`).join("")}
+    ${st.landlord||st.landlordPhone?`<div class="hint">Landlord: ${esc(st.landlord)} ${st.landlordPhone?`· <span class="mono">${esc(st.landlordPhone)}</span>`:""}</div>`:""}</div>`;
+}
+
+/* ---------- receipt verification (everyone) ---------- */
+function viewVerify(){
+  const v = S.verify;
+  return `<div class="two">
+    <section class="stack">
+      <span class="eyebrow">For tenants, landlords and anyone shown a receipt</span>
+      <h1 class="display h1">Verify a receipt</h1>
+      <p style="margin:0;max-width:52ch">Every approved payment gets its own receipt number (for example <span class="mono">RCT-2026-000001</span>) and an 8-character verification code. Enter both to confirm the receipt is genuine and see what it was for.</p>
+      <p class="hint">Only the landlord's system can create receipt numbers and codes, so a receipt that does not match here was not issued by ${esc(mkName())}.</p>
+    </section>
+    <form class="panel stack" id="verifyForm" autocomplete="off">
+      <label class="fld">Receipt number<input id="v-no" required placeholder="RCT-2026-000001" value="${esc(v?.no||"")}" style="text-transform:uppercase;font-family:var(--f-mono)"></label>
+      <label class="fld">Verification code<input id="v-code" required placeholder="XXXX-XXXX" value="${esc(v?.code||"")}" style="text-transform:uppercase;font-family:var(--f-mono);letter-spacing:.06em"></label>
+      <button class="btn primary" type="submit" ${S.busy?"disabled":""}>Check receipt</button>
+      ${v?.result ? (v.result.ok ? `<div class="verify-result"><span class="big">Genuine receipt</span>
+          <dl class="kv"><dt>Receipt no.</dt><dd class="code">${esc(v.result.no)}</dd><dt>Shop</dt><dd>${esc(v.result.r.shopNo)} · <span class="mono">${esc(v.result.r.shopCode)}</span></dd><dt>Tenant</dt><dd>${esc(v.result.r.tenant)}</dd>
+          <dt>Amount</dt><dd>${rs(v.result.r.amount)}</dd><dt>Credited to rent</dt><dd>${rs(v.result.r.rentCredit)}</dd><dt>Purpose</dt><dd>${esc(v.result.r.reason)} · ${monLabel(v.result.r.month)}</dd>
+          <dt>Paid</dt><dd>${esc(fmtWhen({at:v.result.r.paidAt}))}</dd><dt>Approved</dt><dd>${esc(fmtWhen({at:v.result.r.approvedAt}))}</dd></dl></div>`
+        : `<div class="verify-result bad"><span class="big">${v.result.cancelled?"Cancelled receipt":"Not valid"}</span><span>${esc(v.result.why)}</span></div>`) : ""}
+    </form>
+  </div>`;
+}
+async function doVerify(no, code){
+  S.verify = {no, code, result:null}; S.busy = true; render();
+  try {
+    if (!S.db) throw {m:"Database unavailable. Open the page while signed in."};
+    const n = normNo(no);
+    if (!/^RCT-\d{4}-\d{6}$/.test(n)) S.verify.result = {ok:false, why:"Receipt numbers look like RCT-2026-000001. Check the number on the receipt."};
+    else { const snap = await S.db.doc("receipts/"+n).get();
+      if (!snap.exists) S.verify.result = {ok:false, why:"No receipt with this number exists."};
+      else { const r = snap.data();
+        if (normCode(r.code) !== normCode(code)) S.verify.result = {ok:false, why:"The verification code does not match this receipt number."};
+        else if (r.status === "cancelled") S.verify.result = {ok:false, cancelled:true, why:`This receipt was cancelled by the landlord${r.cancelledAt?" on "+fmtD(r.cancelledAt):""}.`};
+        else S.verify.result = {ok:true, no:n, r}; } }
+  } catch(e){ S.verify.result = {ok:false, why:errText(e)}; }
+  S.busy = false; render();
+}
+
+/* ---------- months ---------- */
+function allMonths(){
+  const starts = S.units.map(u => u.startDate).filter(Boolean).sort();
+  return starts.length ? monthsFrom(starts[0]).reverse() : [curMonth()];
+}
+function monthRows(k){
+  return S.units.map(u => [u, calc(u)]).filter(([,c]) => c && c.months.includes(k))
+    .map(([u,c]) => { const got = c.byMonth[k]||0; const pays = (u.payments||[]).filter(p => p.month===k && credit(p) > 0);
+      return {u, rent:c.rent, got, left:Math.max(0,c.rent-got), late:isLate(u,k), when: pays.map(fmtWhen).join(" / ")}; })
+    .sort((a,b)=> String(a.u.shopNo).localeCompare(String(b.u.shopNo), undefined, {numeric:true}));
+}
+function viewMonths(){
+  const ms = allMonths(); if (!S.selMonth || !ms.includes(S.selMonth)) S.selMonth = ms[0];
+  const sum = k => { const r = monthRows(k); return {n:r.length, due:r.reduce((s,x)=>s+x.rent,0), got:r.reduce((s,x)=>s+Math.min(x.rent,x.got),0), unpaid:r.filter(x=>x.left>0).length}; };
+  const rows = monthRows(S.selMonth);
+  return `<div style="margin-bottom:16px"><span class="eyebrow">Month-by-month accounts</span><h1 class="display h1">Months</h1></div>
+  <div class="two">
+    <section class="stack"><div class="tbl-wrap"><table class="mlist"><thead><tr><th>Month</th><th class="num">Collected</th><th class="num">Remaining</th><th class="num">Unpaid</th></tr></thead><tbody>
+      ${ms.map(k => { const x = sum(k); return `<tr class="click ${k===S.selMonth?"sel":""}" data-month="${k}" tabindex="0"><td>${monLabel(k)}</td><td class="num">${rs(x.got)}</td>
+        <td class="num" style="${x.due-x.got>0?"color:var(--danger);font-weight:700":""}">${rs(x.due-x.got)}</td>
+        <td class="num mono" style="${x.unpaid?"color:var(--danger);font-weight:700":""}">${x.unpaid}/${x.n}</td></tr>`; }).join("")}
+    </tbody></table></div></section>
+    <section class="stack">
+      <div class="row between"><h2 class="display h2">${monLabel(S.selMonth)}</h2><button type="button" class="btn sm" data-csv="month">Export CSV</button></div>
+      ${rows.length?`<div class="tbl-wrap"><table class="wide"><thead><tr><th>Shop</th><th>Tenant</th><th class="num">Rent</th><th class="num">Paid</th><th class="num">Remaining</th><th>Date &amp; time</th></tr></thead><tbody>
+        ${rows.map(r=>`<tr class="click" data-unit="${esc(r.u.id)}" style="${r.left?"color:var(--danger)":""}"><td><strong>${esc(r.u.shopNo)}</strong></td><td>${esc(r.u.tenant)}</td><td class="num">${rs(r.rent)}</td><td class="num">${r.got?rs(r.got):"—"}</td><td class="num" style="${r.left?"font-weight:700":""}">${r.left?rs(r.left):"—"}</td><td class="mono" style="font-size:13px">${esc(r.when||"—")}</td></tr>`).join("")}
+      </tbody></table></div>`:`<div class="empty"><p class="muted">No shop was rented out this month.</p></div>`}
+      <p class="hint" style="margin:0">Shops in red still owe rent. Click a shop to record a payment.</p>
+    </section>
+  </div>`;
+}
+
+/* ---------- invoices page ---------- */
+function viewInvoices(){
+  const ms = allMonths(); if (!S.selMonth || !ms.includes(S.selMonth)) S.selMonth = ms[0];
+  const list = S.units.map(u => invoiceData(u, S.selMonth)).filter(Boolean).sort((a,b)=>String(a.u.shopNo).localeCompare(String(b.u.shopNo),undefined,{numeric:true}));
+  const due = list.reduce((s,d)=>s+d.total,0), unpaid = list.filter(d=>!d.isPaid).length;
+  return `<div class="row between" style="margin-bottom:16px"><div><span class="eyebrow">Monthly invoice for every tenant</span><h1 class="display h1">Invoices</h1></div>
+      <label class="fld" style="min-width:200px">Month<select id="inv-month">${ms.map(k=>`<option value="${k}" ${k===S.selMonth?"selected":""}>${monLabel(k)}</option>`).join("")}</select></label></div>
+    <div class="stats" style="margin-bottom:20px">
+      <div class="stat"><b>${list.length}</b><span>Invoices · ${monLabel(S.selMonth)}</span></div>
+      <div class="stat"><b>${list.length-unpaid}</b><span>Paid</span></div>
+      <div class="stat ${unpaid?"alert":""}"><b>${unpaid}</b><span>Unpaid</span></div>
+      <div class="stat ${due?"alert":""}"><b>Rs ${num(due)}</b><span>Total due</span></div>
+    </div>
+    ${list.length?`<div class="tbl-wrap"><table class="wide"><thead><tr><th>Invoice no.</th><th>Shop</th><th>Tenant</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Due</th><th>Status</th><th></th></tr></thead><tbody>
+      ${list.map(d=>`<tr style="${d.isPaid?"":"color:var(--danger)"}"><td class="mono">${esc(d.no)}</td><td><strong>${esc(d.u.shopNo)}</strong></td><td>${esc(d.u.tenant)}</td><td class="num">${rs(d.gross)}</td><td class="num">${d.paid?rs(d.paid):"—"}</td><td class="num" style="font-weight:700">${rs(d.total)}</td>
+        <td><span class="pill ${d.isPaid?"ok":"bad"}">${d.isPaid?"Paid":"Unpaid"}</span></td><td><button type="button" class="btn sm" data-inv="${esc(d.u.id)}|${d.month}">View invoice</button></td></tr>`).join("")}
+    </tbody></table></div>`:`<div class="empty"><h3>No invoices</h3><p class="muted">No shop was rented out this month.</p></div>`}`;
+}
+
+/* ---------- settings ---------- */
+function viewSettings(){
+  const st = S.settings; if (!S.draft) S.draft = JSON.parse(JSON.stringify(st.methods||[]));
+  return `<div style="margin-bottom:16px"><span class="eyebrow">Landlord only</span><h1 class="display h1">Settings</h1></div>
+  ${S.msg?`<div style="margin-bottom:16px">${msgHTML()}</div>`:""}
+  <div class="two">
+    <form class="panel stack" id="settingsForm">
+      <h2 class="display h2">Market &amp; landlord</h2>
+      <div class="fgrid">
+        <label class="fld full">Market name<input id="s-market" value="${esc(mkName())}"></label>
+        <label class="fld">Landlord name<input id="s-landlord" value="${esc(st.landlord)}"></label>
+        <label class="fld">Landlord mobile<input id="s-phone" type="tel" value="${esc(st.landlordPhone)}"></label>
+        <label class="fld">Rent due each month by day<input id="s-due" type="number" min="1" max="28" value="${esc(st.dueDay||5)}"><span class="hint">Applies to new shops.</span></label>
+      </div>
+      <h2 class="display h2">Payment methods</h2>
+      <p class="hint" style="margin:0">Tenants see these methods and account details. Methods switched off are hidden.</p>
+      <div>${S.draft.map((m,i)=>`<div class="method-row">
+        <label class="fld">Name<input id="s-mname-${i}" value="${esc(m.name)}" placeholder="e.g. JazzCash"></label>
+        <label class="fld">Account details<textarea id="s-mdet-${i}" rows="2" placeholder="Account title, number">${esc(m.details)}</textarea></label>
+        <label class="fld" style="align-self:center">On<input id="s-mon-${i}" type="checkbox" ${m.on!==false?"checked":""} style="width:auto"></label>
+        <button type="button" class="btn sm danger" data-rm-method="${i}">Remove</button></div>`).join("")}</div>
+      <div class="row"><button type="button" class="btn sm" data-add-method>+ Add method</button></div>
+      <button class="btn primary" type="submit" ${S.busy?"disabled":""}>Save settings</button>
+    </form>
+    <section class="panel stack">
+      <h2 class="display h2">CSV export</h2>
+      <p class="hint" style="margin:0">Opens in Excel or Google Sheets.</p>
+      <div class="stack" style="gap:10px">
+        <button type="button" class="btn" data-csv="units">All shops and balances</button>
+        <button type="button" class="btn" data-csv="payments">All payments with receipt numbers</button>
+        <button type="button" class="btn" data-csv="months">Monthly summary</button>
+        <button type="button" class="btn" data-csv="invoices">This month's invoices</button>
+      </div>
+      ${S.downloads?"":`<p class="hint" style="margin:0">Downloads are not available on this page. Pressing a button copies the CSV so you can paste it into Excel.</p>`}
+      <h2 class="display h2" style="margin-top:8px">Receipts</h2>
+      <p class="hint" style="margin:0">Receipts issued so far: <span class="mono">${S.counter}</span>. Numbers run in order and are never reused, even if a payment is deleted.</p>
+    </section>
+  </div>`;
+}
+function readDraft(){ const f = document.getElementById("settingsForm"); if (!f || !S.draft) return;
+  S.draft = S.draft.map((m,i) => ({name:f.querySelector("#s-mname-"+i)?.value.trim() ?? m.name, details:f.querySelector("#s-mdet-"+i)?.value.trim() ?? m.details, on:f.querySelector("#s-mon-"+i)?.checked ?? m.on})); }
+
+/* ---------- CSV ---------- */
+const csvCell = v => { const t = String(v ?? ""); return /[",\n]/.test(t) ? '"' + t.replace(/"/g,'""') + '"' : t; };
+const toCSV = rows => "﻿" + rows.map(r => r.map(csvCell).join(",")).join("\r\n");
+const statusName = u => u.status==="occupied"?"Rented":u.status==="left"?"Left":"Vacant";
+const payStatus = p => p.status==="pending"?"Awaiting approval":p.status==="rejected"?"Rejected":"Received";
+const PAY_HEAD = ["Receipt no.","Verification code","For month","Purpose","Amount","Credited to rent","Deducted","Deduction reason","Paid (date & time)","Approved","Method","Note","Status","Recorded by"];
+const payRow = p => [p.rcptNo||"",p.rcptCode||"",monLabel(p.month),reasonOf(p),p.amount,credit(p),(Number(p.amount)||0)-credit(p),p.deductReason||"",fmtWhen(p),p.confirmedAt?fmtWhen({at:p.confirmedAt}):"",p.method,p.note,payStatus(p),p.by==="tenant"?"Tenant":"Landlord"];
+function buildCSV(kind){
+  if (kind === "units") return ["shops", [["Shop code","Shop","Floor","Tenant","Mobile","Business","Status","Monthly rent","Rent start","Left on","Months","Total rent","Paid","Balance"],
+    ...S.units.map(u => { const c = calc(u); return [u.id,u.shopNo,u.floor,u.tenant,u.phone,u.business,statusName(u),u.rent,u.startDate,u.endDate||"",c?.months.length||0,c?.expected||0,c?.paid||0,c?.balance||0]; })]];
+  if (kind === "payments") return ["payments", [["Shop code","Shop","Tenant",...PAY_HEAD],
+    ...S.units.flatMap(u => (u.payments||[]).map(p => ({k:sortKey(p), r:[u.id,u.shopNo,u.tenant,...payRow(p)]}))).sort((a,b)=>b.k.localeCompare(a.k)).map(x=>x.r)]];
+  if (kind === "months") return ["months", [["Month","Shops","Total rent","Collected","Remaining","Unpaid shops"],
+    ...allMonths().map(k => { const r = monthRows(k); const due = r.reduce((s,x)=>s+x.rent,0), got = r.reduce((s,x)=>s+Math.min(x.rent,x.got),0); return [monLabel(k), r.length, due, got, due-got, r.filter(x=>x.left>0).length]; })]];
+  if (kind === "month"){ const k = S.selMonth; return ["month-"+k, [["Shop code","Shop","Tenant","Mobile","Rent","Paid","Remaining","Date & time"],
+    ...monthRows(k).map(r => [r.u.id,r.u.shopNo,r.u.tenant,r.u.phone,r.rent,r.got,r.left,r.when])]]; }
+  if (kind === "invoices"){ const k = S.selMonth || curMonth(); return ["invoices-"+k, [["Invoice no.","Shop","Tenant","Mobile","Month","Total","Paid","Due","Status"],
+    ...S.units.map(u=>invoiceData(u,k)).filter(Boolean).map(d => [d.no,d.u.shopNo,d.u.tenant,d.u.phone,monLabel(k),d.gross,d.paid,d.total,d.isPaid?"Paid":"Unpaid"])]]; }
+  if (kind === "mine"){ const u = S.myUnit, c = calc(u);
+    const rows = [[`${mkName()} — full statement`],["Shop",u.shopNo],["Shop code",u.id],["Tenant",u.tenant],["Rent start",fmtD(u.startDate)],["Monthly rent",u.rent],["Total rent to date",c.expected],["Total credited",c.paid],["Balance",c.balance],[],
+      ["Month","Rent","Paid","Remaining","Status"], ...c.months.map(k => { const g = c.byMonth[k]||0; return [monLabel(k), c.rent, g, Math.max(0,c.rent-g), g>=c.rent?"Paid":g>0?"Part paid":isLate(u,k)?"Unpaid":"Not due yet"]; }), [],
+      PAY_HEAD, ...[...(u.payments||[])].sort((a,b)=>sortKey(a).localeCompare(sortKey(b))).map(payRow)];
+    return ["statement-"+u.id, rows]; }
+}
+async function exportCSV(kind){
+  const [name, rows] = buildCSV(kind); const data = toCSV(rows); const filename = `rent-link-${name}-${todayISO()}.csv`;
+  if (S.downloads){
+    try { await S.downloads.save({filename, data}); toast("CSV saved"); return; }
+    catch(e){ if (e?.code === "declined") return; if (e?.code === "rate_limited"){ toast("Please wait a moment and try again"); return; } }
   }
-  return{el,value};
+  try { await navigator.clipboard.writeText(data.replace(/^﻿/,"")); toast("CSV copied — paste it into Excel"); } catch { toast("Export failed"); }
 }
 
-/* ---------- tenant account card (used by tenants and by the owner's preview) ---------- */
-function AccountCard(rec){
-  const current=Ledger.paidFor(rec,NOW);
-  const latestPaid=Object.keys(rec.paid||{}).sort().pop();
-  const top=latestPaid&&latestPaid>NOW?latestPaid:NOW;
-  const months=Month.range(rec.since||NOW,top).reverse().slice(0,18);
-  const due=Ledger.dueMonths(rec);
-  return h("div",{class:"account"},
-    h("div",{class:"head"},h("span",{class:"lbl"},state.settings.market||"Shop"),h("h2",{},rec.shop),
-      h("p",{class:"sub"},rec.tenant+" · Monthly rent ",h("span",{class:"mono"},money(rec.rent)))),
-    h("div",{class:"status "+(current?"ok":"due")},
-      h("span",{class:"lbl",style:"color:inherit"},Month.label(NOW)),
-      h("strong",{},current?"✓ Rent paid":"Rent not paid yet"),
-      current?h("span",{},money(current.amount)+" · "+current.method+" · "+prettyDate(current.date))
-             :h("span",{},due.length>1?due.length+" months outstanding · "+money(due.length*rec.rent)+" in total":money(rec.rent)+" due"),
-      current?h("button",{class:"small",type:"button",onclick:()=>openReceipt(rec,NOW)},"View receipt"):null),
-    h("ul",{class:"hist","aria-label":"Payment history"},months.map(k=>{
-      const p=Ledger.paidFor(rec,k);
-      return h("li",{},h("span",{},Month.label(k)),
-        p?h("span",{class:"row",style:"gap:6px"},h("span",{class:"pill ok"},"✓ Paid "+money(p.amount)),h("button",{class:"small",type:"button",onclick:()=>openReceipt(rec,k)},"Receipt"))
-         :h("span",{class:"pill "+(k>NOW?"idle":"due")},k>NOW?"Not due yet":"Unpaid"));
-    })));
-}
-function PayPanel(rec){
-  const st=state.settings, due=Ledger.dueMonths(rec), amount=due.length?due.length*rec.rent:rec.rent;
-  const accounts=[["JazzCash",st.jazzcash],["Easypaisa",st.easypaisa],[st.bank||"Bank account",st.iban]].filter(a=>a[1]);
-  return h("div",{class:"panel"},
-    h("div",{class:"row spread"},h("h2",{},"Pay rent online"),h("span",{class:"mono"},money(amount))),
-    accounts.length?h("ol",{class:"steps"},
-        h("li",{},"Open your JazzCash, Easypaisa or banking app."),
-        h("li",{},"Send "+money(amount)+" to one of the accounts below."),
-        h("li",{},st.whatsapp?"Send the payment screenshot or transaction ID on WhatsApp.":"Keep the transaction ID for your records."),
-        h("li",{},"Your landlord confirms it and your receipt appears here."))
-      :h("p",{class:"sub"},"Your landlord hasn't added payment accounts yet."),
-    accounts.map(([name,num])=>h("div",{class:"acct"},
-      h("div",{},h("div",{class:"lbl"},name),h("div",{class:"mono"},num),st.title?h("div",{class:"meta"},st.title):null),
-      h("button",{class:"small",type:"button",onclick:()=>copyText(num,name+" number copied")},"Copy"))),
-    st.whatsapp?h("div",{class:"acct"},h("div",{},h("div",{class:"lbl"},"WhatsApp for payment proof"),h("div",{class:"mono"},st.whatsapp)),
-      h("button",{class:"small",type:"button",onclick:()=>copyText(st.whatsapp,"WhatsApp number copied")},"Copy")):null);
-}
-
-/* =========================================================
-   6. Owner screen
-   ========================================================= */
-const OwnerScreen={
-  els:{},
-  mount(){
-    const E=this.els;
-    E.tabLedger=h("button",{role:"tab",type:"button",onclick:()=>{state.tab="ledger";render()}},"Ledger");
-    E.tabMonths=h("button",{role:"tab",type:"button",onclick:()=>{state.tab="months";render()}},"Months");
-    E.tabSettings=h("button",{role:"tab",type:"button",onclick:()=>{state.tab="settings";render()}},"Payment settings");
-    E.monthsView=h("div",{class:"stack"});
-    E.monthLabel=h("b",{});
-    E.search=h("input",{type:"search",id:"search",placeholder:"Search shop or tenant","aria-label":"Search shops",oninput:e=>{state.query=e.target.value;render()}});
-    E.seg=h("div",{class:"seg",role:"group","aria-label":"Filter"},[["all","All"],["due","Unpaid"],["paid","Paid"]].map(([v,l])=>h("button",{type:"button","data-v":v,onclick:()=>{state.filter=v;render()}},l)));
-    E.summary=h("div",{class:"summary"});
-    E.list=h("div",{class:"ledger"});
-    E.ledgerView=h("div",{class:"stack"},
-      h("div",{class:"toolbar"},
-        h("div",{class:"monthnav"},
-          h("button",{class:"small",type:"button","aria-label":"Previous month",onclick:()=>{state.month=Month.shift(state.month,-1);render()}},"‹"),
-          E.monthLabel,
-          h("button",{class:"small",type:"button","aria-label":"Next month",onclick:()=>{state.month=Month.shift(state.month,1);render()}},"›"),
-          h("button",{class:"small ghost",type:"button",onclick:()=>{state.month=NOW;render()}},"This month")),
-        h("div",{class:"row"},
-          state.downloads?h("button",{class:"small",type:"button",onclick:exportCsv},"Export CSV"):null,
-          h("button",{class:"primary",type:"button",onclick:()=>openShopForm()},"+ Add shop"))),
-      E.summary,
-      h("div",{class:"filters"},E.search,E.seg),
-      E.list,
-      h("p",{class:"note"},"Give each tenant this page's link plus their shop code and PIN (use \"Copy login\"). When a shop becomes vacant, delete it and that tenant's login stops working."));
-    E.settingsView=h("div",{});
-    return h("div",{class:"stack"},h("div",{class:"tabs",role:"tablist"},E.tabLedger,E.tabMonths,E.tabSettings),E.ledgerView,E.monthsView,E.settingsView);
-  },
-  update(){
-    const E=this.els, t=state.tab;
-    for(const[k,tab,view]of[["ledger",E.tabLedger,E.ledgerView],["months",E.tabMonths,E.monthsView],["settings",E.tabSettings,E.settingsView]]){
-      tab.setAttribute("aria-selected",String(t===k));view.hidden=t!==k;
-    }
-    if(t==="settings"){if(!state.settingsDirty)E.settingsView.replaceChildren(SettingsForm());return}
-    if(t==="months"){E.monthsView.replaceChildren(...MonthsView());return}
-    E.monthLabel.textContent=Month.label(state.month);
-    E.seg.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===state.filter)));
-    E.summary.replaceChildren(...SummaryBlock());
-    E.list.replaceChildren(...ShopRows());
-  },
-};
-
-function SummaryBlock(){
-  const s=Ledger.summary(state.shops,state.month);
-  const pct=s.expected?Math.round(s.collected/s.expected*100):0;
-  return[
-    h("div",{class:"figs"},
-      h("div",{},h("span",{class:"lbl"},"Expected"),h("span",{class:"big"},money(s.expected))),
-      h("div",{},h("span",{class:"lbl"},"Collected"),h("span",{class:"big ok"},money(s.collected))),
-      h("div",{},h("span",{class:"lbl"},"Outstanding"),h("span",{class:"big due"},money(s.outstanding))),
-      h("div",{},h("span",{class:"lbl"},"All arrears to date"),h("span",{class:"big "+(s.arrears?"bad":"")},money(s.arrears)))),
-    h("div",{class:"bar",role:"progressbar","aria-valuemin":"0","aria-valuemax":"100","aria-valuenow":String(pct),"aria-label":"Collected this month"},h("span",{style:"width:"+pct+"%"})),
-    h("p",{class:"note"},s.paidCount+" of "+s.activeCount+" shops paid for "+Month.label(state.month)+" · "+pct+"% collected"),
-  ];
-}
-
-function ShopRows(){
-  const m=state.month, q=state.query.trim().toLowerCase();
-  if(!state.shops.length)return[h("div",{class:"empty"},h("h3",{},"No shops yet"),
-    h("p",{class:"sub"},"Add your first shop with its name, tenant and monthly rent. Each shop gets a login code and PIN for the tenant."),
-    h("button",{class:"primary",type:"button",onclick:()=>openShopForm()},"+ Add your first shop"))];
-  const rows=state.shops
-    .filter(s=>!q||(s.name+" "+s.tenant).toLowerCase().includes(q))
-    .filter(s=>state.filter==="all"||(state.filter==="paid")===!!Ledger.paidFor(s,m))
-    .sort((a,b)=>String(a.name).localeCompare(String(b.name),undefined,{numeric:true}));
-  if(!rows.length)return[h("div",{class:"empty"},h("p",{class:"sub"},"No shops match this search or filter."))];
-  return rows.map(s=>{
-    const p=Ledger.paidFor(s,m), active=Ledger.isActive(s,m), dueCount=Ledger.dueMonths(s).length;
-    return h("div",{class:"shop"+(p?" paid":active?"":" idle")},
-      h("div",{class:"who"},h("h3",{},s.name),
-        h("div",{class:"meta"},s.tenant,s.phone?" · "+s.phone:""),
-        h("div",{class:"meta"},"Code ",h("span",{class:"code"},s.code)," PIN ",h("span",{class:"code"},s.pin||"—"))),
-      h("div",{class:"state"},h("span",{class:"mono"},money(s.rent)+" / month"),
-        !active?h("span",{class:"pill idle"},"Starts "+Month.short(s.since))
-          :p?h("span",{class:"pill ok"},"✓ Paid · "+p.method+" · "+prettyDate(p.date))
-          :h("span",{class:"pill due"},"Unpaid"),
-        dueCount>1?h("span",{class:"pill bad"},dueCount+" months owed · "+money(Ledger.arrears(s))):null),
-      h("div",{class:"acts"},
-        p?h("button",{class:"small",type:"button",onclick:()=>openReceipt(Ledger.publicView(s),m)},"Receipt")
-         :active?h("button",{class:"small primary",type:"button",onclick:()=>openPaymentForm(s)},"Record payment"):null,
-        p?h("button",{class:"small",type:"button",onclick:()=>undoPayment(s,m)},"Undo"):null,
-        h("button",{class:"small",type:"button",onclick:()=>copyLogin(s)},"Copy login"),
-        h("button",{class:"small",type:"button",onclick:()=>openSheet("Tenant's view",()=>h("div",{class:"stack"},h("p",{class:"note"},"This is exactly what "+s.tenant+" sees after logging in."),AccountCard(Ledger.publicView(s)),PayPanel(Ledger.publicView(s))))},"Preview"),
-        h("button",{class:"small ghost",type:"button",onclick:()=>openShopForm(s)},"Edit"),
-        confirmButton("Vacant · Delete",async()=>{try{await Data.deleteShop(s);toast(s.name+" deleted")}catch{toast("Couldn't delete. Please try again.")}})));
+/* ---------- payment proof images ---------- */
+function compressImage(file){
+  return new Promise((res, rej) => {
+    if (!file || !file.type.startsWith("image/")) return rej({m:"Please upload an image (JPG, PNG or a screenshot)."});
+    const fr = new FileReader();
+    fr.onload = () => { const img = new Image(); img.onload = () => {
+      let max = 1200, q = 0.72, out = "";
+      for (let i = 0; i < 6; i++){
+        const k = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement("canvas");
+        c.width = Math.round(img.width*k); c.height = Math.round(img.height*k); const x = c.getContext("2d");
+        x.fillStyle = "#fff"; x.fillRect(0,0,c.width,c.height); x.drawImage(img, 0, 0, c.width, c.height);
+        out = c.toDataURL("image/jpeg", q); if (out.length < 220000) break; max = Math.round(max*0.8); q = Math.max(0.45, q - 0.07);
+      }
+      res(out);
+    }; img.onerror = () => rej({m:"This image could not be opened."}); img.src = fr.result; };
+    fr.onerror = () => rej({m:"This image could not be read."}); fr.readAsDataURL(file);
   });
 }
+const proofLoading = new Set();
+async function loadProof(pid){
+  if (!S.db || S.proofCache[pid] || proofLoading.has(pid)) return;
+  proofLoading.add(pid);
+  try { const d = await S.db.doc("proofs/"+pid).get(); S.proofCache[pid] = d.exists ? d.data().img : ""; } catch { S.proofCache[pid] = ""; }
+  proofLoading.delete(pid); if (!fieldsBusy()) render();
+}
+const proofImg = p => { if (!p.hasProof) return `<span class="hint">No proof</span>`; const src = S.proofCache[p.id]; if (src === undefined) loadProof(p.id);
+  return src ? `<img class="proof-thumb" src="${esc(src)}" alt="Proof" data-proof="${esc(p.id)}">` : `<button type="button" class="btn sm" data-proof="${esc(p.id)}">Proof</button>`; };
+const seenKey = code => "rlm-seen-" + code;
+function seenSet(code){ try { return new Set(JSON.parse(localStorage.getItem(seenKey(code))||"[]")); } catch { return new Set(); } }
+function markSeen(code, id){ try { const s = seenSet(code); s.add(id); localStorage.setItem(seenKey(code), JSON.stringify([...s].slice(-200))); } catch {} }
 
-/* ---------- months report: one row per month, plus a shop × month grid ---------- */
-function MonthsView(){
-  const shops=[...state.shops].sort((a,b)=>String(a.name).localeCompare(String(b.name),undefined,{numeric:true}));
-  if(!shops.length)return[h("div",{class:"ledger"},h("div",{class:"empty"},h("h3",{},"No months to show yet"),h("p",{class:"sub"},"Add a shop on the Ledger tab and its months will appear here.")))];
-  const first=shops.map(s=>s.since||NOW).sort()[0];
-  const lastPaid=shops.flatMap(s=>Object.keys(s.paid||{})).sort().pop();
-  const last=lastPaid&&lastPaid>NOW?lastPaid:NOW;
-  const months=Month.range(first,last).reverse().slice(0,24);
-  const goTo=k=>{state.month=k;state.tab="ledger";render()};
-  let totExp=0,totCol=0;
-  const rows=months.map(k=>{
-    const s=Ledger.summary(shops,k);totExp+=s.expected;totCol+=s.collected;
-    const pct=s.expected?Math.round(s.collected/s.expected*100):0;
-    const tr=h("tr",{class:"clickable"+(k===NOW?" current":""),tabindex:"0",title:"Open "+Month.label(k)+" in the ledger"},
-      h("td",{},Month.label(k),k===NOW?" · now":k>NOW?" · advance":""),
-      h("td",{class:"num"},s.paidCount+" / "+s.activeCount),
-      h("td",{class:"num"},money(s.expected)),
-      h("td",{class:"num",style:"color:var(--ok)"},money(s.collected)),
-      h("td",{class:"num",style:s.outstanding&&k<=NOW?"color:var(--due)":""},money(s.outstanding)),
-      h("td",{},h("span",{class:"minibar","aria-hidden":"true"},h("span",{style:"width:"+pct+"%"}))," ",h("span",{class:"mono"},pct+"%")));
-    tr.addEventListener("click",()=>goTo(k));
-    tr.addEventListener("keydown",e=>{if(e.key==="Enter")goTo(k)});
-    return tr;
-  });
-  const summaryTable=h("div",{class:"tablewrap"},h("table",{},
-    h("thead",{},h("tr",{},h("th",{},"Month"),h("th",{class:"num"},"Shops paid"),h("th",{class:"num"},"Expected"),h("th",{class:"num"},"Collected"),h("th",{class:"num"},"Outstanding"),h("th",{},"Progress"))),
-    h("tbody",{},rows),
-    h("tfoot",{},h("tr",{},h("th",{},"Total"),h("th",{}),h("th",{class:"num"},money(totExp)),h("th",{class:"num"},money(totCol)),h("th",{class:"num"},money(Math.max(0,totExp-totCol))),h("th",{})))));
-  const gridMonths=months.slice(0,12).reverse();
-  const grid=h("div",{class:"tablewrap"},h("table",{class:"grid"},
-    h("thead",{},h("tr",{},h("th",{class:"sticky"},"Shop"),gridMonths.map(k=>h("th",{style:"text-align:center"},Month.short(k))))),
-    h("tbody",{},shops.map(s=>h("tr",{},
-      h("td",{class:"sticky",title:s.name+" · "+s.tenant},s.name),
-      gridMonths.map(k=>{
-        const p=Ledger.paidFor(s,k), active=Ledger.isActive(s,k);
-        if(!active)return h("td",{class:"cell"},h("span",{class:"dot idle","aria-label":"Not rented"},"·"));
-        if(p)return h("td",{class:"cell"},h("button",{class:"dot ok",type:"button","aria-label":s.name+" "+Month.label(k)+": paid, open receipt",onclick:()=>openReceipt(Ledger.publicView(s),k)},"✓"));
-        if(k>NOW)return h("td",{class:"cell"},h("span",{class:"dot idle","aria-label":"Not due yet"},"–"));
-        return h("td",{class:"cell"},h("button",{class:"dot due",type:"button","aria-label":s.name+" "+Month.label(k)+": unpaid, record payment",onclick:()=>{state.month=k;openPaymentForm(s)}},"✗"));
-      }))))));
-  return[
-    h("div",{class:"row spread"},h("h2",{},"Month by month"),h("p",{class:"note"},"Tap a month to open it in the ledger.")),
-    summaryTable,
-    h("div",{class:"row spread"},h("h2",{},"Shop × month grid"),
-      h("div",{class:"legend"},h("span",{},h("span",{class:"dot ok"},"✓"),"Paid (tap for receipt)"),h("span",{},h("span",{class:"dot due"},"✗"),"Unpaid (tap to record)"),h("span",{},h("span",{class:"dot idle"},"·"),"Not rented"))),
-    grid,
-  ];
+/* ---------- helpers ---------- */
+function waNumber(p){ let d = String(p||"").replace(/\D/g,""); if (d.startsWith("00")) d = d.slice(2); if (d.startsWith("0")) d = "92" + d.slice(1); return d; }
+function waLink(p, text){ const n = waNumber(p); return n ? `https://wa.me/${n}?text=${encodeURIComponent(text||"")}` : ""; }
+async function copy(text, btn){
+  try { await navigator.clipboard.writeText(text); toast("Copied"); }
+  catch { const el = btn?.closest("[data-copy-scope]")?.querySelector(".mono"); if (el){ const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Text selected — copy it now"); } else toast("Could not copy"); }
+}
+async function hashPin(code, pin){
+  const msg = "rlm|" + code + "|" + pin;
+  if (window.crypto?.subtle){ const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(msg)); return {alg:"sha256", h:[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("")}; }
+  let h = 0x811c9dc5; for (const ch of msg){ h ^= ch.charCodeAt(0); h = Math.imul(h,16777619)>>>0; } return {alg:"fnv", h:h.toString(16)};
+}
+function rand(n){ const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; }
+function newCode(){ let c; do { c = "RL" + String(1000 + rand(9000)); } while (S.units.some(u => u.id === c)); return c; }
+function newPin(){ const used = new Set(Object.values(S.pins)); let p, n = 0; do { p = String(rand(10000)).padStart(4,"0"); n++; } while (used.has(p) && n < 500); return p; }
+const uid = () => Date.now().toString(36) + rand(1e6).toString(36);
+let chain = Promise.resolve();
+function write(fn){ const p = chain.then(fn); chain = p.catch(()=>{}); return p; }
+function errText(e){
+  if (e?.m) return e.m;
+  const c = e?.code;
+  if (c === "invalid_argument") return "Not saved: you don't have permission to write on this link. Ask the landlord for Contributor access.";
+  if (c === "quota_exceeded") return "The database is full. Remove old records.";
+  if (c === "unavailable" || c === "revoked") return "Connection lost. Reopen the page.";
+  return "Not saved: " + (e?.message || "unknown error") + ". Please try again.";
+}
+const fieldsBusy = () => { const id = document.activeElement?.id || ""; return /^(f-|p-|l-|c-|t-|s-|ap-|inv-|v-)/.test(id); };
+
+/* ---------- render ---------- */
+function renderTabs(){
+  const tabs = [];
+  if (S.isOwner) tabs.push(["admin","Rent Desk"],["months","Months"],["invoices","Invoices"],["settings","Settings"]);
+  tabs.push(["login", S.session ? "My Shop" : "Tenant Login"], ["verify","Verify Receipt"]);
+  document.getElementById("tabs").innerHTML = tabs.map(([k,l]) => `<button type="button" data-tab="${k}" ${S.view===k?'aria-current="page"':""}>${l}</button>`).join("");
+}
+function render(){
+  renderTabs();
+  document.getElementById("mkt").textContent = mkName() !== BRAND ? mkName() : "Shop rent management";
+  if (!S.ready){ $app.innerHTML = `<p class="muted">Loading…</p>`; return; }
+  if (["admin","months","invoices","settings"].includes(S.view) && !S.isOwner) S.view = "login";
+  let html = S.view === "admin" ? (S.openUnit ? viewUnitAdmin() : viewAdmin()) : S.view === "months" ? viewMonths() : S.view === "invoices" ? viewInvoices() : S.view === "settings" ? viewSettings() : S.view === "verify" ? viewVerify() : (S.session ? viewTenant() : viewLogin());
+  if (S.dbMissing) html = `<div class="msg info" style="margin-bottom:16px">The database isn't running on this page. Open it on claude.ai while signed in.</div>` + html;
+  $app.innerHTML = html;
+  renderOverlay();
+}
+const msgHTML = () => S.msg ? `<div class="msg ${S.msg.t}">${esc(S.msg.m)}</div>` : "";
+
+/* ---------- tenant login ---------- */
+function viewLogin(){
+  return `<div class="two">
+    <section class="stack">
+      <span class="eyebrow">For tenants</span>
+      <h1 class="display h1">See your shop account</h1>
+      <p style="margin:0;max-width:52ch">Your landlord has given you a <b>Shop Code</b> (for example RL4821) and a 4-digit <b>PIN</b>. Log in to see every month since your rent started, every payment, invoice and receipt, and to upload a new payment.</p>
+      <p class="hint">Your Shop Code and PIN are yours for life. If you forget them, ask your landlord.</p>
+    </section>
+    <form class="panel stack" id="loginForm" autocomplete="off">
+      <label class="fld">Shop Code<input id="l-code" required placeholder="RL0000" style="text-transform:uppercase;font-family:var(--f-mono);font-size:20px;letter-spacing:.08em"></label>
+      <label class="fld">PIN<input id="l-pin" required inputmode="numeric" maxlength="4" pattern="\\d{4}" placeholder="••••" type="password" style="font-family:var(--f-mono);font-size:20px;letter-spacing:.3em"></label>
+      ${msgHTML()}
+      <button class="btn primary" type="submit" ${S.busy?"disabled":""}>Log in</button>
+    </form>
+  </div>`;
+}
+async function doLogin(code, pin){
+  S.busy = true; S.msg = null; render();
+  try {
+    if (!S.db) throw {m:"Database unavailable. Open the page while signed in."};
+    const a = await S.db.doc("auth/"+code).get();
+    if (!a.exists) throw {m:"This Shop Code was not found. Check it and try again."};
+    const h = await hashPin(code, pin), d = a.data();
+    if (h.alg !== d.alg || h.h !== d.h) throw {m:"Wrong PIN. Try again or ask your landlord."};
+    S.session = code; store.set(SESSION_KEY, code); subscribeMine();
+  } catch(e){ setMsg("err", errText(e)); }
+  S.busy = false; render();
+}
+function subscribeMine(){
+  S.myUnsub?.(); S.myUnit = null;
+  if (!S.db || !S.session) return;
+  S.myUnsub = S.db.doc("units/"+S.session).onSnapshot(snap => { S.myUnit = snap.exists ? {id:snap.id, ...snap.data()} : false; if (!fieldsBusy()) render(); }, () => {});
 }
 
-function copyLogin(s){
-  const st=state.settings;
-  copyText(["Rent account for "+s.name+(st.market?" ("+st.market+")":""),"Open the link I shared and log in with:","Shop code: "+s.code,"PIN: "+s.pin].join("\n"),"Login details copied. Paste them into WhatsApp.");
+/* ---------- tenant dashboard ---------- */
+function viewTenant(){
+  const u = S.myUnit;
+  if (u === null) return `<p class="muted">Loading your shop record…</p>`;
+  if (u === false || (u.status !== "occupied" && u.status !== "left")) return `<div class="empty"><h3>Record not found</h3><p class="muted">This shop is no longer registered to you. Contact your landlord.</p><button type="button" class="btn" data-logout>Log out</button></div>`;
+  const c = calc(u);
+  const ledger = [...(u.payments||[])].sort((a,b)=> sortKey(b).localeCompare(sortKey(a)));
+  const seen = seenSet(u.id);
+  const fresh = (u.payments||[]).filter(p => p.by==="tenant" && (p.status==="confirmed"||p.status==="rejected") && p.confirmedAt && !seen.has(p.id));
+  const receipts = (u.payments||[]).filter(p => p.status==="confirmed" || !p.status).length;
+  return `<div class="row between" style="margin-bottom:16px">
+      <div><span class="eyebrow">${esc(u.floor||"")} · Your Shop Code <span class="mono">${esc(u.id)}</span></span><h1 class="display h1">${esc(u.shopNo)}</h1><div class="muted">${esc(u.tenant)}${u.business?" · "+esc(u.business):""}</div></div>
+      <div class="row"><button type="button" class="btn" data-csv="mine">Download full statement</button><button type="button" class="btn" data-logout>Log out</button></div>
+    </div>
+    ${S.msg?`<div style="margin-bottom:16px">${msgHTML()}</div>`:""}
+    ${fresh.length?`<div class="newrcpt" style="margin-bottom:16px"><strong>Your landlord has reviewed your payment</strong>${fresh.map(p=>`<div class="row between"><span>${esc(reasonOf(p))} · ${rs(p.amount)} · ${monLabel(p.month)} — ${p.status==="confirmed"?`<strong>Approved</strong>${p.rcptNo?` · <span class="code">${esc(p.rcptNo)}</span>`:""}`:`<strong style="color:var(--danger)">Rejected</strong>${p.rejectReason?" ("+esc(p.rejectReason)+")":""}`}</span>${p.status==="confirmed"?`<button type="button" class="btn sm primary" data-rcpt="${esc(u.id)}|${esc(p.id)}" data-seen="${esc(p.id)}">View receipt</button>`:`<button type="button" class="btn sm" data-seen="${esc(p.id)}">OK</button>`}</div>`).join("")}</div>`:""}
+    ${u.status==="left"?`<div class="msg info" style="margin-bottom:16px">You left this shop on ${fmtD(u.endDate)}. Your Shop Code and PIN stay the same, so you can see your full account at any time.</div>`:""}
+    <div class="stats" style="margin-bottom:20px">
+      <div class="stat"><b>${c.months.length}</b><span>Months since ${fmtD(u.startDate)}</span></div>
+      <div class="stat"><b>Rs ${num(c.expected)}</b><span>Total rent to date</span></div>
+      <div class="stat"><b>Rs ${num(c.paid)}</b><span>Total paid towards rent</span></div>
+      <div class="stat ${c.balance?"alert":""}"><b>Rs ${num(c.balance)}</b><span>${c.advance?`Advance ${rsT(c.advance)}`:"Balance"}</span></div>
+      <div class="stat"><b>${receipts}</b><span>Receipts</span></div>
+    </div>
+    <div class="two">
+      <section class="stack">
+        <div class="big-due ${c.balance?"":"clear"}">
+          <span class="eyebrow">${c.balance?"Total rent outstanding":"Nothing outstanding"}</span>
+          <span class="amt">Rs ${num(c.balance)}</span>
+          <span style="font-size:14px">${c.balance?`Rent not fully paid for ${c.unpaidMonths} month${c.unpaidMonths===1?"":"s"}`:c.advance?`${rsT(c.advance)} paid in advance`:"Thank you, your account is clear"}</span>
+        </div>
+        <div class="panel"><dl class="kv">
+          <dt>Monthly rent</dt><dd>${rs(u.rent)}</dd>
+          <dt>Due date</dt><dd>By the ${esc(u.dueDay||5)}th of each month</dd>
+          <dt>This month (${monLabel(curMonth())})</dt><dd><span class="pill ${c.cur.k}">${esc(c.cur.t)}</span></dd>
+          <dt>Rent started</dt><dd>${fmtD(u.startDate)}</dd>
+          ${u.endDate?`<dt>Left on</dt><dd>${fmtD(u.endDate)}</dd>`:""}
+          <dt>Months fully paid</dt><dd>${c.paidMonths} of ${c.months.length}</dd>
+          <dt>Total money received</dt><dd>${rs(c.received)}</dd>
+          ${c.other?`<dt>Paid towards other charges</dt><dd>${rs(c.other)}</dd>`:""}
+          ${u.deposit?`<dt>Security deposit</dt><dd>${rs(u.deposit)}</dd>`:""}
+          <dt>Shop Code (for life)</dt><dd class="mono">${esc(u.id)}</dd>
+        </dl></div>
+        ${u.status==="left"?"":payBox()}
+        ${u.status==="left"?"":`<form class="panel stack" id="claimForm">
+          <h2 class="display h3">Upload a payment</h2>
+          <p class="hint" style="margin:0">Made a payment? Upload a photo of the receipt or a screenshot here. As soon as the landlord approves it, your receipt with its own number and verification code appears here.</p>
+          <div class="fgrid">
+            <label class="fld">For month<select id="c-month">${[...c.months].reverse().map(k=>`<option value="${k}" ${k===curMonth()?"selected":""}>${monLabel(k)}</option>`).join("")}</select></label>
+            <label class="fld">Amount (Rs)<input id="c-amount" type="number" min="1" required value="${esc(u.rent)}"></label>
+            <label class="fld">Method<select id="c-method">${methodNames().map(m=>`<option>${esc(m)}</option>`).join("")}</select></label>
+            <label class="fld">Purpose (what it's for)<select id="c-reason">${REASONS.map(r=>`<option>${r}</option>`).join("")}</select></label>
+            <label class="fld full">Payment proof (photo / screenshot)<input id="c-proof" type="file" accept="image/*" required><span class="hint">The image is resized automatically.</span></label>
+            <label class="fld full">Reference / note<input id="c-note" maxlength="120" placeholder="e.g. JazzCash TID 1234567"></label>
+          </div>
+          <p class="hint" style="margin:0">The date and time are recorded automatically when you send.</p>
+          <button class="btn gold" type="submit" ${S.busy?"disabled":""}>${S.busy?"Uploading…":"Upload proof and send"}</button>
+        </form>`}
+      </section>
+      <section class="stack">
+        <h2 class="display h2">Full account · ${monLabel(c.months[0])} to now</h2>
+        ${fullHistory(u,c)}
+        <h2 class="display h2">My receipts</h2>
+        ${receiptList(u)}
+        <h2 class="display h2">My invoices</h2>
+        ${invoiceList(u,c)}
+        <h2 class="display h2">All payments</h2>
+        ${ledgerTable(ledger, false, u)}
+        <form class="panel stack" id="tenantInfo">
+          <h2 class="display h3">My details</h2>
+          <div class="fgrid">
+            <label class="fld">Mobile number<input id="t-phone" type="tel" value="${esc(u.phone)}"></label>
+            <label class="fld">Business<input id="t-business" value="${esc(u.business)}" placeholder="e.g. Mobile repair"></label>
+          </div>
+          <button class="btn" type="submit" ${S.busy?"disabled":""}>Save</button>
+        </form>
+      </section>
+    </div>`;
+}
+function ledgerTable(list, admin, u){
+  if (!list.length) return `<div class="empty"><p class="muted">No payments recorded yet.</p></div>`;
+  return `<div class="tbl-wrap"><table class="wide"><thead><tr><th>Paid (date &amp; time)</th><th>Receipt no.</th><th>For month</th><th>Purpose</th><th class="num">Amount</th><th class="num">To rent</th><th>Method</th><th>Proof</th><th>Status</th><th></th>${admin?"<th></th>":""}</tr></thead><tbody>
+  ${list.map(p => `<tr><td class="mono" style="font-size:13px">${esc(fmtWhen(p))}</td><td class="code" style="font-size:12px">${esc(p.rcptNo||"—")}</td><td>${monLabel(p.month)}</td><td>${esc(reasonOf(p))}${p.deductAmt&&isRentReason(p)?`<div class="hint">Deducted ${rsT(p.deductAmt)}: ${esc(p.deductReason||"")}</div>`:""}</td><td class="num">${rs(p.amount)}</td><td class="num">${p.status==="confirmed"||!p.status?rs(credit(p)):"—"}</td><td>${esc(p.method)}${p.note?`<div class="hint">${esc(p.note)}</div>`:""}</td><td>${p.hasProof?proofImg(p):'<span class="hint">—</span>'}</td>
+    <td>${p.status==="pending"?'<span class="pill warn">Awaiting approval</span>':p.status==="rejected"?`<span class="pill bad">Rejected</span>${p.rejectReason?`<div class="hint">${esc(p.rejectReason)}</div>`:""}`:'<span class="pill ok">Received</span>'}</td>
+    <td>${p.status==="rejected"||p.status==="pending"?"":`<button type="button" class="btn sm" data-rcpt="${esc(u.id)}|${esc(p.id)}">Receipt</button>`}</td>
+    ${admin?`<td>${S.confirm?.kind==="pay"&&S.confirm.id===p.id?`<div class="inline-confirm">Delete? The receipt number will be marked cancelled. <button type="button" class="btn sm danger solid" data-del-pay="${esc(p.id)}">Yes</button><button type="button" class="btn sm" data-cancel>No</button></div>`:`<button type="button" class="btn sm danger" data-ask="pay:${esc(p.id)}">Delete</button>`}</td>`:""}</tr>`).join("")}
+  </tbody></table></div>`;
+}
+async function tenantUpdate(fn, okMsg){
+  const u = S.myUnit; if (!u) return;
+  S.busy = true; S.msg = null; render();
+  try { const fresh = await S.db.doc("units/"+u.id).get(); const patch = fn(fresh.data()); await write(()=>S.db.doc("units/"+u.id).update(patch)); setMsg("ok", okMsg); }
+  catch(e){ setMsg("err", errText(e)); }
+  S.busy = false; render();
 }
 
-function openShopForm(shop){
-  openSheet(shop?"Edit shop":"Add a shop",close=>{
-    const f=h("form",{class:"stack"},
-      field("Shop name or number",h("input",{id:"f-name",required:true,value:shop?.name||"",placeholder:"Shop 4, ground floor"})),
-      field("Tenant name",h("input",{id:"f-tenant",required:true,value:shop?.tenant||"",placeholder:"Tenant's full name"})),
-      h("div",{class:"grid2"},
-        field("Phone",h("input",{id:"f-phone",inputmode:"tel",value:shop?.phone||"",placeholder:"03xx xxxxxxx"}),"Only you can see this."),
-        field("Monthly rent (Rs)",h("input",{id:"f-rent",required:true,type:"number",min:"0",step:"1",inputmode:"numeric",value:shop?.rent??""}))),
-      h("div",{class:"grid2"},
-        field("Rent starts from",h("input",{id:"f-since",type:"month",required:true,value:shop?.since||NOW})),
-        field("Tenant PIN (4 digits)",h("input",{id:"f-pin",class:"mono",required:true,inputmode:"numeric",pattern:"[0-9]{4}",maxlength:"4",value:shop?.pin||newPin()}),"Changing it logs the tenant out.")),
-      shop?h("p",{class:"note"},"Login code: ",h("span",{class:"code"},shop.code)):h("p",{class:"note"},"A login code is created when you save."),
-      h("div",{},h("button",{class:"primary",type:"submit"},shop?"Save changes":"Add shop")));
-    f.addEventListener("submit",async e=>{
-      e.preventDefault();
-      const v=id=>f.querySelector(id).value.trim();
-      const next={...(shop||{}),name:v("#f-name"),tenant:v("#f-tenant"),phone:v("#f-phone"),rent:Number(v("#f-rent"))||0,since:v("#f-since")||NOW,pin:v("#f-pin"),code:shop?.code||newCode(),paid:shop?.paid||{}};
-      try{await Data.saveShop(shop?.id||"s"+Date.now().toString(36),next,shop?.key);toast(shop?"Changes saved":"Shop added · code "+next.code+", PIN "+next.pin);close()}
-      catch(err){toast("Couldn't save ("+(err?.code||"error")+"). Please try again.")}
-    });
-    return f;
-  });
+/* ---------- landlord desk ---------- */
+function viewAdmin(){
+  const units = S.units.filter(u => u.status !== "left");
+  const oldies = S.units.filter(u => u.status === "left");
+  const occ = units.filter(u => u.status === "occupied");
+  const cs = occ.map(u => [u, calc(u)]).filter(([,c]) => c);
+  const cm = curMonth();
+  const dueThis = cs.filter(([,c]) => c.months.includes(cm)).reduce((s,[,c])=>s+c.rent,0);
+  const gotThis = cs.reduce((s,[,c])=>s+Math.min(c.rent, c.byMonth[cm]||0),0);
+  const totalDue = cs.reduce((s,[,c])=>s+c.balance,0);
+  const late = cs.filter(([,c]) => c.cur.k === "bad").length;
+  const claims = occ.flatMap(u => (u.payments||[]).filter(p=>p.status==="pending").map(p=>({u,p})));
+  const lc = S.lastCreated;
+  const rows = (S.filter==="left" ? oldies : units).filter(u => S.filter==="all" || S.filter==="left" || (S.filter==="vacant" ? u.status!=="occupied" : S.filter==="due" ? (calc(u)?.balance>0) : u.status==="occupied"))
+    .sort((a,b)=> String(a.shopNo).localeCompare(String(b.shopNo), undefined, {numeric:true}));
+  return `<div style="margin-bottom:16px"><span class="eyebrow">Only you can see this · ${monLabel(cm)}</span><h1 class="display h1">Rent Desk</h1></div>
+    <div class="stats" style="margin-bottom:20px">
+      <div class="stat"><b>${units.length}</b><span>Shops · ${occ.length} rented, ${units.length-occ.length} vacant</span></div>
+      <div class="stat"><b>Rs ${num(gotThis)}</b><span>Collected this month / ${rsT(dueThis)}</span></div>
+      <div class="stat ${totalDue?"alert":""}"><b>Rs ${num(totalDue)}</b><span>Total outstanding</span></div>
+      <div class="stat ${late?"alert":""}"><b>${late}</b><span>Late this month</span></div>
+    </div>
+    ${S.msg?`<div style="margin-bottom:16px">${msgHTML()}</div>`:""}
+    ${claims.length?`<section class="panel stack" style="margin-bottom:20px;border-color:var(--marigold)"><h2 class="display h3">Payments uploaded by tenants (${claims.length})</h2>
+      <p class="hint" style="margin:0">Check the proof, decide how much goes to rent and how much is deducted for something else, then approve. The tenant gets a numbered receipt with a verification code immediately.</p>
+      <div>${claims.map(({u,p}) => { const key = esc(u.id)+"|"+esc(p.id); const rentDefault = isRentReason(p) ? (Number(p.amount)||0) : 0;
+        return `<div class="claim-card">
+        <div>${proofImg(p)}</div>
+        <div class="stack" style="gap:8px">
+          <div class="row between"><div><strong>${esc(u.shopNo)}</strong> · ${esc(u.tenant)}<div class="hint">${monLabel(p.month)} · ${esc(p.method)} · ${esc(fmtWhen(p))}${p.note?" · "+esc(p.note):""}</div></div>
+            <div><span class="pill warn">${esc(reasonOf(p))}</span> <strong>${rs(p.amount)}</strong></div></div>
+          <div class="approve-box">
+            <label class="fld">Credit to rent (Rs)<input id="ap-rent-${esc(p.id)}" type="number" min="0" value="${rentDefault}"></label>
+            <label class="fld">Deduct (Rs)<input id="ap-ded-${esc(p.id)}" type="number" min="0" value="${(Number(p.amount)||0) - rentDefault}"></label>
+            <label class="fld">Reason for deduction / other charge<input id="ap-why-${esc(p.id)}" value="${isRentReason(p)?"":esc(p.reason)}" placeholder="e.g. Electricity bill"></label>
+          </div>
+          <div class="row"><button type="button" class="btn sm primary" data-approve="${key}">Approve and issue receipt</button>
+            <input id="ap-rej-${esc(p.id)}" placeholder="Reason for rejecting (optional)" style="border:1.5px solid var(--line);border-radius:8px;padding:5px 10px;min-width:0;flex:1;font-size:13px">
+            <button type="button" class="btn sm danger" data-reject="${key}">Reject</button></div>
+        </div></div>`; }).join("")}</div></section>`:""}
+    <div class="two" style="margin-bottom:28px">
+      <form class="panel stack" id="addForm" autocomplete="off">
+        <h2 class="display h2">Add a new shop</h2>
+        <div class="fgrid">
+          <label class="fld">Shop number<input id="f-shopNo" required maxlength="30" placeholder="Shop 12"></label>
+          <label class="fld">Floor<select id="f-floor">${FLOORS.map(f=>`<option>${f}</option>`).join("")}</select></label>
+          <label class="fld">Monthly rent (Rs)<input id="f-rent" type="number" min="0" required placeholder="25000"></label>
+          <label class="fld">Security deposit (Rs)<input id="f-deposit" type="number" min="0" placeholder="50000"></label>
+          <label class="fld full">Size<input id="f-size" maxlength="40" placeholder="e.g. 12 × 20 ft"></label>
+        </div>
+        <fieldset><legend>Tenant (leave blank if the shop is vacant)</legend>
+          <div class="fgrid">
+            <label class="fld">Tenant name<input id="f-tenant" maxlength="60"></label>
+            <label class="fld">Mobile number<input id="f-phone" type="tel" placeholder="0300 1234567"></label>
+            <label class="fld">Business<input id="f-business" maxlength="60" placeholder="e.g. Clothing"></label>
+            <label class="fld">Rent start<input id="f-start" type="date" value="${cm}-01"></label>
+            <label class="fld">Due each month by day<input id="f-dueDay" type="number" min="1" max="28" value="${esc(S.settings.dueDay||5)}"></label>
+          </div>
+        </fieldset>
+        <button class="btn primary" type="submit" ${S.busy?"disabled":""}>Add shop and create PIN</button>
+      </form>
+      ${lc ? slipHTML(lc) : `<section class="panel stack"><h2 class="display h2">How it works</h2>
+        <ol class="steps">
+          <li>Add every shop in the market here: number, rent and tenant.</li>
+          <li>Each tenant gets their own Shop Code and PIN, which stay the same for life. Send them on WhatsApp.</li>
+          <li>Tenants upload a photo of each payment with its purpose. You approve it, and they instantly get a receipt with its own number and verification code.</li>
+          <li>Anyone can check a receipt is genuine on the "Verify Receipt" page.</li>
+        </ol></section>`}
+    </div>
+    <div class="row between" style="margin-bottom:12px"><h2 class="display h2">All shops</h2>
+      <div class="filters">${[["all","All"],["occ","Rented"],["due","With balance"],["vacant","Vacant"],["left",`Former tenants (${oldies.length})`]].map(([k,l])=>`<button type="button" class="chip" data-filter="${k}" aria-pressed="${S.filter===k}">${l}</button>`).join("")}</div></div>
+    ${units.length || oldies.length ? (rows.length ? `<div class="tbl-wrap"><table class="wide"><thead><tr><th>Shop</th><th>Shop code</th><th>Tenant</th><th class="num">Rent</th><th>${MON[today().getMonth()]}</th><th class="num">Balance</th><th>PIN</th></tr></thead><tbody>
+      ${rows.map(u => { const c = calc(u); return `<tr class="click" data-unit="${esc(u.id)}" tabindex="0" style="${c?.balance?"color:var(--danger)":""}">
+        <td><strong>${esc(u.shopNo)}</strong><div class="hint">${esc(u.floor||"")}</div></td>
+        <td class="mono">${esc(u.id)}</td>
+        <td>${u.status!=="vacant"?`${esc(u.tenant)}<div class="hint">${esc(u.status==="left"?"Left "+fmtD(u.endDate):(u.business||""))}</div>`:'<span class="pill off">Vacant</span>'}</td>
+        <td class="num">${rs(u.rent)}</td>
+        <td>${c?`<span class="pill ${c.cur.k}">${esc(c.cur.t)}</span>`:"—"}</td>
+        <td class="num" style="${c?.balance?"font-weight:700":""}">${c?rs(c.balance):"—"}</td>
+        <td class="mono">${esc(S.pins[u.id]||"—")}</td></tr>`; }).join("")}
+      </tbody></table></div>` : `<div class="empty"><p class="muted">No shops match this filter.</p></div>`)
+      : `<div class="empty"><h3>No shops yet</h3><p class="muted">Add the first shop in your market using the form above.</p></div>`}`;
+}
+function slipHTML(lc){
+  const text = `Assalam o Alaikum ${lc.tenant||""}!\nYour account for shop ${lc.shopNo} at ${mkName()} is ready.\n\nShop Code: ${lc.code}\nPIN: ${lc.pin}\n\nOpen the link, go to "Tenant Login" and enter this code and PIN. You can see your whole rent history, payments, invoices and receipts there, and upload payments. This code is yours for life.`;
+  return `<section class="slip">
+    <span class="eyebrow">Give this to the tenant · ${esc(lc.shopNo)}</span>
+    <div class="creds">
+      <div class="cred" data-copy-scope><span class="hint">Shop Code</span><b class="mono">${esc(lc.code)}</b><button type="button" class="btn sm" data-copy="${esc(lc.code)}">Copy</button></div>
+      <div class="cred" data-copy-scope><span class="hint">PIN</span><b class="mono">${esc(lc.pin)}</b><button type="button" class="btn sm" data-copy="${esc(lc.pin)}">Copy</button></div>
+    </div>
+    <div class="row">${waLink(lc.phone)?`<a class="btn primary" target="_blank" rel="noopener" href="${esc(waLink(lc.phone,text))}">Send on WhatsApp</a>`:""}
+      <button type="button" class="btn" data-copy="${esc(text)}">Copy full message</button>
+      <button type="button" class="btn sm" data-dismiss-slip>Close</button></div>
+    <p class="hint" style="margin:0">Paste this page's link into the message too.</p>
+  </section>`;
+}
+function viewUnitAdmin(){
+  const u = S.units.find(x => x.id === S.openUnit);
+  if (!u){ S.openUnit = null; return viewAdmin(); }
+  const c = calc(u);
+  const ledger = [...(u.payments||[])].sort((a,b)=> sortKey(b).localeCompare(sortKey(a)));
+  const remind = c ? `Assalam o Alaikum ${u.tenant},\nRent for ${u.shopNo} (${mkName()}) is outstanding.\nTotal balance: ${rsT(c.balance)}\nMonthly rent: ${rsT(u.rent)}, due by the ${u.dueDay||5}th of each month.\nPlease pay as soon as possible. Thank you.` : "";
+  const ask = k => S.confirm?.kind===k && S.confirm.id===u.id;
+  return `<button type="button" class="back" data-close>← All shops</button>
+    <div class="row between" style="margin-bottom:16px">
+      <div><span class="eyebrow">${esc(u.floor||"")}${u.size?" · "+esc(u.size):""} · Shop code <span class="mono">${esc(u.id)}</span> · PIN <span class="mono">${esc(S.pins[u.id]||"—")}</span></span>
+      <h1 class="display h1">${esc(u.shopNo)}</h1>
+      <div class="muted">${u.status!=="vacant"?`${esc(u.tenant)} · <span class="mono">${esc(u.phone||"")}</span>${u.business?" · "+esc(u.business):""}`:"Vacant shop"}</div></div>
+      <div class="row">
+        ${c&&c.balance&&waLink(u.phone)&&u.status==="occupied"?`<a class="btn" target="_blank" rel="noopener" href="${esc(waLink(u.phone,remind))}">Send rent reminder</a>`:""}
+        ${u.status==="left"?"":`<button type="button" class="btn" data-edit>${S.editing?"Close editing":"Edit"}</button>`}
+      </div>
+    </div>
+    ${S.msg?`<div style="margin-bottom:16px">${msgHTML()}</div>`:""}
+    ${S.lastCreated?.code===u.id?`<div style="margin-bottom:16px">${slipHTML(S.lastCreated)}</div>`:""}
+    ${S.editing?editForm(u):""}
+    ${c ? `<div class="stats" style="margin-bottom:20px">
+      <div class="stat"><b>Rs ${num(u.rent)}</b><span>Monthly rent · due by the ${u.dueDay||5}th</span></div>
+      <div class="stat"><b>Rs ${num(c.paid)}</b><span>Collected so far (${c.months.length} months)</span></div>
+      <div class="stat ${c.balance?"alert":""}"><b>Rs ${num(c.balance)}</b><span>${c.advance?`Advance ${rsT(c.advance)}`:"Balance"}</span></div>
+      <div class="stat"><span class="pill ${c.cur.k}" style="font-size:13px;justify-self:start">${esc(c.cur.t)}</span><span>${monLabel(curMonth())}</span></div>
+    </div>
+    <div class="two">
+      ${u.status==="left"?`<div class="msg info">${esc(u.tenant)} left this shop on ${fmtD(u.endDate)}. This record is now read-only.</div>`:`<form class="panel stack" id="payForm">
+        <h2 class="display h3">Record a payment</h2>
+        <div class="fgrid">
+          <label class="fld">For month<select id="p-month">${[...c.months].reverse().map(k=>`<option value="${k}" ${k===curMonth()?"selected":""}>${monLabel(k)}${(c.byMonth[k]||0)>=c.rent?" ✓":""}</option>`).join("")}</select></label>
+          <label class="fld">Amount (Rs)<input id="p-amount" type="number" min="1" required value="${esc(u.rent)}"></label>
+          <label class="fld">Method<select id="p-method">${methodNames().map(m=>`<option>${esc(m)}</option>`).join("")}</select></label>
+          <label class="fld">Purpose<select id="p-reason">${REASONS.map(r=>`<option>${r}</option>`).join("")}</select></label>
+          <label class="fld">Deduct (Rs)<input id="p-ded" type="number" min="0" value="0"><span class="hint">Part of the amount used for something else</span></label>
+          <label class="fld">Reason for deduction<input id="p-why" maxlength="80" placeholder="e.g. Electricity bill"></label>
+          <label class="fld full">Note<input id="p-note" maxlength="120" placeholder="Bank reference, etc."></label>
+        </div>
+        <p class="hint" style="margin:0">Today's date and time are recorded automatically, and a numbered receipt with a verification code is issued.</p>
+        <button class="btn primary" type="submit" ${S.busy?"disabled":""}>Record payment</button>
+      </form>`}
+      <section class="stack"><h2 class="display h3">Last 12 months</h2>${monthStrip(u,c)}</section>
+    </div>
+    <h2 class="display h2" style="margin-top:24px">Full account · ${monLabel(c.months[0])} to now</h2>
+    ${fullHistory(u,c)}
+    <h2 class="display h2" style="margin-top:24px">Payments &amp; receipts</h2>
+    ${ledgerTable(ledger, true, u)}` : `<div class="empty"><h3>Shop is vacant</h3><p class="muted">Press "Edit" and enter the tenant's name, number and rent start date. Their Shop Code and PIN are created automatically.</p></div>`}
+    <section class="panel stack" style="margin-top:28px">
+      <h2 class="display h3">More actions</h2>
+      <div class="row">
+        ${u.status==="left"?`<span class="hint">This is a former tenant. Shop Code ${esc(u.id)} and the PIN stay with them for life.</span>`:""}
+        ${u.status==="occupied"?(ask("vacate")?`<span class="inline-confirm">Is ${esc(u.tenant)} leaving? Their code and PIN stay the same and they can always see their account. The next tenant gets a new code. <button type="button" class="btn sm danger solid" data-vacate="${esc(u.id)}">Yes, vacate</button><button type="button" class="btn sm" data-cancel>No</button></span>`:`<button type="button" class="btn sm danger" data-ask="vacate:${esc(u.id)}">Vacate shop</button>`):""}
+        ${ask("unit")?`<span class="inline-confirm">This record, Shop Code and PIN will be deleted for good. Are you sure? <button type="button" class="btn sm danger solid" data-del-unit="${esc(u.id)}">Yes, delete</button><button type="button" class="btn sm" data-cancel>No</button></span>`:`<button type="button" class="btn sm danger" data-ask="unit:${esc(u.id)}">Delete record</button>`}
+      </div>
+    </section>`;
+}
+function editForm(u){
+  return `<form class="panel stack" id="editForm" style="margin-bottom:20px;border:2px solid var(--marigold)">
+    <h2 class="display h3">Edit shop</h2>
+    <div class="fgrid">
+      <label class="fld">Shop number<input id="f-shopNo" required value="${esc(u.shopNo)}"></label>
+      <label class="fld">Floor<select id="f-floor">${[...new Set([u.floor, ...FLOORS].filter(Boolean))].map(f=>`<option ${f===u.floor?"selected":""}>${esc(f)}</option>`).join("")}</select></label>
+      <label class="fld">Monthly rent (Rs)<input id="f-rent" type="number" min="0" required value="${esc(u.rent)}"></label>
+      <label class="fld">Security deposit (Rs)<input id="f-deposit" type="number" min="0" value="${esc(u.deposit)}"></label>
+      <label class="fld full">Size<input id="f-size" value="${esc(u.size)}"></label>
+      <label class="fld">Tenant name<input id="f-tenant" value="${esc(u.tenant)}"></label>
+      <label class="fld">Mobile number<input id="f-phone" type="tel" value="${esc(u.phone)}"></label>
+      <label class="fld">Business<input id="f-business" value="${esc(u.business)}"></label>
+      <label class="fld">Rent start<input id="f-start" type="date" value="${esc(u.startDate||curMonth()+"-01")}"></label>
+      <label class="fld">Due each month by day<input id="f-dueDay" type="number" min="1" max="28" value="${esc(u.dueDay||5)}"></label>
+    </div>
+    <p class="hint" style="margin:0">Changing the rent also recalculates past months at the new rent.</p>
+    <div class="row"><button class="btn primary" type="submit" ${S.busy?"disabled":""}>Save</button><button type="button" class="btn" data-edit>Cancel</button></div>
+  </form>`;
+}
+function readUnitForm(f){
+  const g = id => f.querySelector("#f-"+id)?.value.trim() ?? "";
+  const tenant = g("tenant");
+  return {shopNo:g("shopNo"), floor:g("floor"), size:g("size"), rent:Number(g("rent"))||0, deposit:Number(g("deposit"))||0,
+    tenant, phone:g("phone"), business:g("business"), startDate: tenant ? (g("start") || curMonth()+"-01") : "",
+    dueDay: Math.min(28, Math.max(1, Number(g("dueDay"))||5)), status: tenant ? "occupied" : "vacant"};
+}
+async function setPin(code, pin){
+  const h = await hashPin(code, pin);
+  await write(()=>S.db.doc("auth/"+code).set({alg:h.alg, h:h.h, updatedAt:Date.now()}));
+  const pins = {...S.pins, [code]:pin};
+  await write(()=>S.db.doc("admin/pins").set({map:pins}));
+  S.pins = pins;
+}
+async function unitUpdate(id, fn, okMsg){
+  S.busy = true; S.msg = null; render();
+  try { const snap = await S.db.doc("units/"+id).get(); const u = snap.exists ? {id, ...snap.data()} : S.units.find(x=>x.id===id); const patch = await fn(u); await write(()=>S.db.doc("units/"+id).update({...patch, updatedAt:Date.now()})); if (okMsg) setMsg("ok", typeof okMsg === "function" ? okMsg(patch) : okMsg); }
+  catch(e){ setMsg("err", errText(e)); }
+  S.busy = false; render();
 }
 
-function openPaymentForm(shop){
-  openSheet("Record payment",close=>{
-    const paid=shop.paid||{};
-    const owed=Ledger.dueMonths(shop);
-    const options=Month.range([shop.since||NOW,Month.shift(state.month,-11)].sort().pop(),Month.shift(state.month,6));
-    const selected=new Set(paid[state.month]?[]:[state.month]);
-    const amountIn=h("input",{id:"p-amt",type:"number",min:"0",step:"1",inputmode:"numeric",required:true,value:shop.rent});
-    const totalEl=h("div",{class:"total"});
-    const refresh=()=>{totalEl.replaceChildren(h("span",{},selected.size+" month"+(selected.size===1?"":"s")+" × "+money(amountIn.value)),h("span",{class:"mono"},money(selected.size*(Number(amountIn.value)||0))))};
-    amountIn.addEventListener("input",refresh);
-    const chips=options.map(k=>{
-      const done=!!paid[k];
-      const tag=done?"✓ paid":k===NOW?"this month":k>NOW?"advance":"owed";
-      const b=h("button",{type:"button",class:"mchip","aria-pressed":String(selected.has(k)),disabled:done},Month.short(k),h("small",{},tag));
-      b.addEventListener("click",()=>{selected.has(k)?selected.delete(k):selected.add(k);b.setAttribute("aria-pressed",String(selected.has(k)));refresh()});
-      return b;
-    });
-    const f=h("form",{class:"stack"},
-      h("p",{class:"sub"},shop.name+" · "+shop.tenant+(owed.length?" · "+owed.length+" month"+(owed.length===1?"":"s")+" owed":"")),
-      h("div",{class:"row spread"},h("span",{class:"lbl"},"Which months is this for?"),
-        owed.length>1?h("button",{class:"small",type:"button",onclick:()=>{owed.forEach(k=>selected.add(k));chips.forEach((b,i)=>b.setAttribute("aria-pressed",String(selected.has(options[i]))));refresh()}},"Select all owed"):null),
-      h("div",{class:"months",role:"group","aria-label":"Months"},chips),
-      h("div",{class:"grid2"},
-        field("Amount per month (Rs)",amountIn),
-        field("Date received",h("input",{id:"p-date",type:"date",required:true,value:todayISO()}))),
-      field("Payment method",h("select",{id:"p-method"},["Cash","JazzCash","Easypaisa","Bank transfer"].map(x=>h("option",{},x)))),
-      field("Transaction ID",h("input",{id:"p-txn",placeholder:"Wallet or bank reference"}),"Optional. Shown on the receipt."),
-      totalEl,
-      h("button",{class:"primary",type:"submit"},"Save payment"));
-    refresh();
-    f.addEventListener("submit",async e=>{
-      e.preventDefault();
-      if(!selected.size){toast("Choose at least one month.");return}
-      const entry={amount:Number(amountIn.value)||0,date:f.querySelector("#p-date").value,method:f.querySelector("#p-method").value,txn:f.querySelector("#p-txn").value.trim()};
-      const nextPaid={...paid};
-      for(const k of selected)nextPaid[k]={...entry,no:receiptNo(shop.code,k)};
-      try{await Data.saveShop(shop.id,{...shop,paid:nextPaid});toast("Payment saved for "+selected.size+" month"+(selected.size===1?"":"s")+". Receipts are ready.");close()}
-      catch{toast("Couldn't save. Please try again.")}
-    });
-    return f;
-  });
-}
-
-async function undoPayment(shop,m){
-  const paid={...(shop.paid||{})};delete paid[m];
-  try{await Data.saveShop(shop.id,{...shop,paid});toast(Month.label(m)+" marked unpaid")}catch{toast("Couldn't save. Please try again.")}
-}
-
-async function exportCsv(){
-  const m=state.month, esc=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
-  const lines=[["Shop","Tenant","Phone","Rent","Status","Amount","Date","Method","Transaction ID","Receipt no."].map(esc).join(",")];
-  for(const s of state.shops){const p=Ledger.paidFor(s,m);lines.push([s.name,s.tenant,s.phone,s.rent,p?"Paid":"Unpaid",p?.amount,p?.date,p?.method,p?.txn,p?.no].map(esc).join(","))}
-  try{await state.downloads.save({filename:"Rent-"+m+".csv",data:lines.join("\n")});toast("CSV saved")}
-  catch(e){toast(e?.code==="declined"?"Download cancelled":"Couldn't download the CSV.")}
-}
-
-function SettingsForm(){
-  const v=state.settings;
-  const input=(id,ph,mode)=>h("input",{id:"st-"+id,value:v[id]||"",placeholder:ph,inputmode:mode||false});
-  const pad=SignaturePad(v.signature,()=>{state.settingsDirty=true});
-  const f=h("form",{class:"panel",oninput:()=>{state.settingsDirty=true}},
-    h("h2",{},"Payment settings"),
-    h("p",{class:"sub"},"Tenants see these details after logging in so they can send rent from their phone. The market name and your name also appear on receipts."),
-    h("div",{class:"grid2"},field("Market or plaza name",input("market","Al-Noor Market")),field("Your name (on receipts)",input("owner","Your name"))),
-    h("div",{class:"grid2"},field("JazzCash number",input("jazzcash","03xx xxxxxxx","tel")),field("Easypaisa number",input("easypaisa","03xx xxxxxxx","tel"))),
-    h("div",{class:"grid2"},field("Bank name",input("bank","Meezan Bank")),field("Account title",input("title","Account holder's name"))),
-    field("Account number or IBAN",input("iban","PK00XXXX0000000000000000")),
-    field("WhatsApp number",input("whatsapp","03xx xxxxxxx","tel"),"Tenants send payment proof here."),
-    h("div",{class:"stack",style:"gap:6px"},
-      h("h3",{},"Your signature"),
-      h("p",{class:"note"},"Sign in the box with your finger or mouse, or upload a photo of your signature on white paper. It is printed on every receipt."),
-      pad.el),
-    h("div",{class:"row"},h("button",{class:"primary",type:"submit"},"Save settings"),
-      h("button",{class:"small",type:"button",onclick:previewReceipt},"Preview a receipt")));
-  f.addEventListener("submit",async e=>{
-    e.preventDefault();
-    const d={};for(const k of["market","owner","jazzcash","easypaisa","bank","title","iban","whatsapp"])d[k]=f.querySelector("#st-"+k).value.trim();
-    d.signature=pad.value();
-    if(d.signature.length>200000){toast("That signature image is too detailed. Please draw it instead.");return}
-    try{await Data.saveSettings(d);state.settingsDirty=false;toast("Settings saved")}catch{toast("Couldn't save. Please try again.")}
-  });
-  /** Shows a sample receipt with what is in the form right now, saved or not. */
-  function previewReceipt(){
-    const draft={...state.settings,signature:pad.value()};
-    for(const k of["market","owner","whatsapp"])draft[k]=f.querySelector("#st-"+k).value.trim();
-    const m=NOW,sample={shop:"Shop 4 (sample)",tenant:"Sample Tenant",rent:25000,code:"SAMPLE",paid:{[m]:{amount:25000,date:todayISO(),method:"JazzCash",txn:"0000000000",no:"SAMPLE-"+m.replace("-","")}}};
-    const saved=state.settings;state.settings=draft;openReceipt(sample,m);state.settings=saved;
+/* ---------- events ---------- */
+document.addEventListener("click", async e => {
+  const mrow = e.target.closest("tr[data-month]");
+  if (mrow){ S.selMonth = mrow.dataset.month; render(); return; }
+  if (e.target.matches("img[data-proof]")){ S.proofView = e.target.dataset.proof; renderOverlay(); return; }
+  const row = e.target.closest("tr[data-unit]");
+  if (row && !e.target.closest("button, img")){ S.view = "admin"; S.openUnit = row.dataset.unit; S.msg = null; S.editing = false; S.confirm = null; render(); scrollTo(0,0); return; }
+  const t = e.target.closest("button, a"); if (!t) return;
+  const d = t.dataset;
+  if (d.tab){ S.view = d.tab; S.openUnit = null; S.msg = null; S.confirm = null; S.draft = null; render(); scrollTo(0,0); return; }
+  if (d.close != null){ S.openUnit = null; S.msg = null; S.editing = false; S.confirm = null; render(); return; }
+  if (d.filter){ S.filter = d.filter; render(); return; }
+  if (d.csv){ exportCSV(d.csv); return; }
+  if (d.inv){ const [id,month] = d.inv.split("|"); S.invoice = {id, month}; renderOverlay(); return; }
+  if (d.rcpt){ const [id,pid] = d.rcpt.split("|"); if (d.seen && S.session) markSeen(S.session, d.seen); S.invoice = {id, pid}; render(); return; }
+  if (d.closeInv != null){ S.invoice = null; S.proofView = null; renderOverlay(); return; }
+  if (d.pdf != null){ downloadPDF(t); return; }
+  if (d.proof){ S.proofView = d.proof; loadProof(d.proof); renderOverlay(); return; }
+  if (d.seen){ if (S.session) markSeen(S.session, d.seen); render(); return; }
+  if (d.addMethod != null){ readDraft(); S.draft.push({name:"",details:"",on:true}); render(); document.getElementById("s-mname-"+(S.draft.length-1))?.focus(); return; }
+  if (d.rmMethod != null){ readDraft(); S.draft.splice(Number(d.rmMethod),1); render(); return; }
+  if (d.copy != null){ copy(d.copy, t); return; }
+  if (d.dismissSlip != null){ S.lastCreated = null; render(); return; }
+  if (d.edit != null){ S.editing = !S.editing; render(); return; }
+  if (d.ask){ const [kind,id] = d.ask.split(":"); S.confirm = {kind,id}; render(); return; }
+  if (d.cancel != null){ S.confirm = null; render(); return; }
+  if (d.logout != null){ S.myUnsub?.(); S.myUnsub = null; S.session = null; S.myUnit = null; store.set(SESSION_KEY, null); S.msg = null; render(); return; }
+  if (d.approve || d.reject){ const [id,pid] = (d.approve||d.reject).split("|"); const ok = !!d.approve;
+    const v = k => document.getElementById(`ap-${k}-${pid}`)?.value.trim() ?? "";
+    const rentC = Math.max(0, Number(v("rent"))||0), ded = Math.max(0, Number(v("ded"))||0), why = v("why"), rej = v("rej");
+    let issued = null;
+    await unitUpdate(id, async u => { const now = new Date().toISOString(); const pays = [];
+      for (const p of (u.payments||[])){
+        if (p.id !== pid){ pays.push(p); continue; }
+        if (!ok){ pays.push({...p, status:"rejected", confirmedAt:now, rejectReason:rej}); continue; }
+        const np = {...p, status:"confirmed", confirmedAt:now, rentCredit:rentC, deductAmt:ded, deductReason:why};
+        issued = await issueReceipt(u, np); pays.push({...np, ...issued});
+      }
+      return {payments:pays}; },
+      () => ok ? `Approved: receipt ${issued?.rcptNo||""} issued (code ${issued?.rcptCode||""}). ${rsT(rentC)} credited to rent${ded?`, ${rsT(ded)} deducted (${why||"Other"})`:""}.` : "Payment rejected.");
+    return; }
+  if (d.delPay){ const id = S.openUnit, pid = d.delPay; S.confirm = null; const u = S.units.find(x=>x.id===id); const p = (u?.payments||[]).find(x=>x.id===pid);
+    await unitUpdate(id, uu => ({payments:(uu.payments||[]).filter(x=>x.id!==pid)}), "Payment deleted. Its receipt number is now marked as cancelled.");
+    await voidReceipt(p?.rcptNo);
+    try { await write(()=>S.db.doc("proofs/"+pid).delete()); } catch {} return; }
+  if (d.vacate){ const id = d.vacate; S.confirm = null; const u = S.units.find(x=>x.id===id); if (!u) return;
+    S.busy = true; S.msg = null; render();
+    try {
+      await write(()=>S.db.doc("units/"+id).update({status:"left", endDate:todayISO(), updatedAt:Date.now()}));
+      const code = newCode();
+      await write(()=>S.db.doc("units/"+code).set({shopNo:u.shopNo, floor:u.floor||"", size:u.size||"", rent:u.rent, deposit:u.deposit||0, tenant:"", phone:"", business:"", startDate:"", dueDay:u.dueDay||5, status:"vacant", payments:[], prevCode:id, createdAt:Date.now(), updatedAt:Date.now()}));
+      S.openUnit = code; setMsg("ok", `${u.tenant}'s record (Shop Code ${id}) is kept. ${u.shopNo} is now vacant. Press "Edit" to add the next tenant.`);
+    } catch(err){ setMsg("err", errText(err)); }
+    S.busy = false; render(); return; }
+  if (d.delUnit){ const id = d.delUnit; S.confirm = null; const u = S.units.find(x=>x.id===id);
+    try { await write(()=>S.db.doc("units/"+id).delete()); await write(()=>S.db.doc("auth/"+id).delete());
+      const pins = {...S.pins}; delete pins[id]; await write(()=>S.db.doc("admin/pins").set({map:pins})); S.pins = pins;
+      for (const p of (u?.payments||[])) await voidReceipt(p.rcptNo);
+      S.openUnit = null; if (S.lastCreated?.code===id) S.lastCreated = null; setMsg("ok","Record deleted. Its receipts are marked as cancelled."); }
+    catch(err){ setMsg("err", errText(err)); } render(); return; }
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape" && (S.invoice || S.proofView)){ S.invoice = null; S.proofView = null; renderOverlay(); return; } if (e.key === "Enter" && e.target.matches("tr[data-unit], tr[data-month]")) e.target.click(); });
+document.addEventListener("change", e => { if (e.target.id === "inv-month"){ S.selMonth = e.target.value; render(); } });
+document.getElementById("overlay").addEventListener("click", e => { if (e.target.id === "overlay"){ S.invoice = null; S.proofView = null; renderOverlay(); } });
+document.addEventListener("submit", async e => {
+  e.preventDefault(); const f = e.target;
+  if (f.id === "verifyForm") return doVerify(f.querySelector("#v-no").value.trim(), f.querySelector("#v-code").value.trim());
+  if (f.id === "settingsForm"){ readDraft(); const g = id => f.querySelector("#s-"+id).value.trim();
+    const next = {marketName:g("market")||BRAND, landlord:g("landlord"), landlordPhone:g("phone"), dueDay:Math.min(28,Math.max(1,Number(g("due"))||5)), methods:S.draft.filter(m=>m.name), updatedAt:Date.now()};
+    S.busy = true; S.msg = null; render();
+    try { await write(()=>S.db.doc("config/settings").set(next)); S.settings = next; S.draft = null; setMsg("ok","Settings saved. Tenants will see the updated payment methods."); }
+    catch(err){ setMsg("err", errText(err)); }
+    S.busy = false; render(); return; }
+  if (f.id === "loginForm") return doLogin(f.querySelector("#l-code").value.trim().toUpperCase(), f.querySelector("#l-pin").value.trim());
+  if (f.id === "addForm"){
+    if (!S.db){ setMsg("err","Database unavailable."); render(); return; }
+    const data = readUnitForm(f); const code = newCode(), pin = newPin();
+    S.busy = true; S.msg = null; render();
+    try {
+      await write(()=>S.db.doc("units/"+code).set({...data, payments:[], createdAt:Date.now(), updatedAt:Date.now()}));
+      if (data.tenant){ await setPin(code, pin); S.lastCreated = {code, pin, shopNo:data.shopNo, tenant:data.tenant, phone:data.phone};
+        setMsg("ok", `${data.shopNo} added. ${data.tenant}'s Shop Code ${code} and PIN ${pin} are theirs for life.`); }
+      else setMsg("ok", `${data.shopNo} added as a vacant shop. A code and PIN are created when you add a tenant.`);
+    } catch(err){ setMsg("err", errText(err)); }
+    S.busy = false; render(); return;
   }
-  return f;
-}
+  if (f.id === "editForm"){ const data = readUnitForm(f); const id = S.openUnit; const before = S.units.find(x=>x.id===id);
+    const newTenant = data.status === "occupied" && !S.pins[id];
+    if (before?.status === "occupied" && data.status !== "occupied"){ setMsg("err","Don't clear the tenant's name. To end a tenancy, use the \"Vacate shop\" button."); render(); return; }
+    await unitUpdate(id, () => ({...data, startDate: data.tenant ? data.startDate : ""}), "Shop details saved."); S.editing = false;
+    if (newTenant && S.msg?.t === "ok"){ const pin = newPin(); try { await setPin(id, pin); S.lastCreated = {code:id, pin, shopNo:data.shopNo, tenant:data.tenant, phone:data.phone}; setMsg("ok", `${data.tenant}'s Shop Code ${id} and PIN ${pin} have been created. They are theirs for life.`); } catch(err){ setMsg("err", errText(err)); } }
+    render(); return; }
+  if (f.id === "payForm"){ const g = id => f.querySelector("#p-"+id).value.trim(); const now = new Date().toISOString();
+    const amount = Number(g("amount"))||0, reason = g("reason"), ded = Math.min(amount, Math.max(0, Number(g("ded"))||0));
+    const rentCredit = reason === RENT ? amount - ded : 0;
+    const p = {id:uid(), month:g("month"), amount, at:now, method:g("method"), reason, note:g("note"), status:"confirmed", by:"admin", confirmedAt:now, rentCredit, deductAmt: reason===RENT ? ded : amount, deductReason: reason===RENT ? g("why") : reason};
+    let issued = null;
+    await unitUpdate(S.openUnit, async u => { issued = await issueReceipt(u, p); return {payments:[...(u.payments||[]), {...p, ...issued}]}; },
+      () => `${rsT(amount)} recorded (${reason}), ${rsT(rentCredit)} credited to rent. Receipt ${issued?.rcptNo} · code ${issued?.rcptCode}.`); return; }
+  if (f.id === "claimForm"){ const g = id => f.querySelector("#c-"+id).value.trim(); const file = f.querySelector("#c-proof").files?.[0];
+    const p = {id:uid(), month:g("month"), amount:Number(g("amount"))||0, at:new Date().toISOString(), method:g("method"), reason:g("reason"), note:g("note"), status:"pending", by:"tenant", hasProof:false};
+    S.busy = true; S.msg = null; render();
+    try {
+      if (file){ const img = await compressImage(file); await write(()=>S.db.doc("proofs/"+p.id).set({img, unit:S.session, at:p.at})); p.hasProof = true; S.proofCache[p.id] = img; }
+    } catch(err){ S.busy = false; setMsg("err", errText(err)); render(); return; }
+    S.busy = false;
+    await tenantUpdate(cur => ({payments:[...(cur.payments||[]), p], updatedAt:Date.now()}), "Payment uploaded. Your numbered receipt will appear here as soon as the landlord approves it."); return; }
+  if (f.id === "tenantInfo"){ const phone = f.querySelector("#t-phone").value.trim(), business = f.querySelector("#t-business").value.trim();
+    await tenantUpdate(() => ({phone, business, updatedAt:Date.now()}), "Details saved."); return; }
+});
 
-/* =========================================================
-   7. Tenant screens
-   ========================================================= */
-function LoginScreen(){
-  const hash=(location.hash||"").slice(1).toUpperCase();
-  const err=h("p",{class:"err",role:"alert"},state.tenant.error);err.hidden=!state.tenant.error;
-  const f=h("form",{class:"panel",style:"max-width:440px"},
-    h("h2",{},"Tenant login"),
-    h("p",{class:"sub"},"Enter the shop code and 4-digit PIN your landlord gave you."),
-    field("Shop code",h("input",{id:"t-code",class:"mono",maxlength:"6",autocapitalize:"characters",autocomplete:"username",placeholder:"ABC123",required:true,value:/^[A-Z0-9]{6}$/.test(hash)?hash:""})),
-    field("PIN",h("input",{id:"t-pin",class:"mono",type:"password",inputmode:"numeric",maxlength:"4",autocomplete:"current-password",placeholder:"••••",required:true})),
-    err,
-    h("div",{},h("button",{class:"primary",type:"submit"},"Log in")));
-  f.addEventListener("submit",async e=>{
-    e.preventDefault();
-    const code=f.querySelector("#t-code").value.trim().toUpperCase(), pin=f.querySelector("#t-pin").value.trim();
-    if(!/^[A-Z0-9]{6}$/.test(code)||!/^[0-9]{4}$/.test(pin)){err.textContent="The shop code has 6 characters and the PIN has 4 digits.";err.hidden=false;return}
-    openTenant(await recordKey(code,pin));
-  });
-  return f;
-}
-function TenantScreen(rec){
-  if(rec===undefined)return h("div",{class:"panel"},h("p",{class:"sub"},"Logging in…"));
-  return h("div",{class:"stack"},AccountCard(rec),PayPanel(rec));
-}
-function openTenant(key){
-  const t=state.tenant;
-  t.unsub?.();
-  Object.assign(t,{key,record:undefined,error:""});
-  t.unsub=Data.watchRecord(key,rec=>{
-    if(rec){t.record=rec;local.set(LOGIN_KEY,key)}
-    else{logoutTenant("That shop code and PIN don't match. Check them with your landlord.")}
-    render();
-  });
-  render();
-}
-function logoutTenant(error=""){
-  const t=state.tenant;t.unsub?.();
-  Object.assign(t,{key:null,record:undefined,unsub:null,error});
-  local.set(LOGIN_KEY,null);mounted=null;render();
-}
-
-/* =========================================================
-   8. Landlord login (Firebase email + password)
-   ========================================================= */
-function LandlordLoginScreen(){
-  const err=h("p",{class:"err",role:"alert",hidden:true});
-  const show=m=>{err.textContent=m;err.hidden=false};
-  const email=h("input",{id:"l-email",type:"email",autocomplete:"username",required:true,placeholder:"you@example.com"});
-  const pass=h("input",{id:"l-pass",type:"password",autocomplete:"current-password",required:true,placeholder:"Your password"});
-  const f=h("form",{class:"panel",style:"max-width:440px"},
-    h("h2",{},"Landlord login"),
-    h("p",{class:"sub"},"Use the email and password you created in Firebase Authentication."),
-    field("Email",email),field("Password",pass),err,
-    h("div",{class:"row"},h("button",{class:"primary",type:"submit"},"Log in"),
-      h("button",{class:"textlink",type:"button",onclick:async()=>{
-        if(!email.value.trim()){show("Type your email first, then tap \"Forgot password\".");return}
-        try{await firebase.auth().sendPasswordResetEmail(email.value.trim());toast("Password reset email sent")}catch(e){show(authMessage(e))}
-      }},"Forgot password")),
-    h("p",{class:"note"},"Are you a tenant? ",h("a",{href:"#",class:"textlink"},"Go to tenant login")));
-  f.addEventListener("submit",async e=>{
-    e.preventDefault();err.hidden=true;
-    try{await firebase.auth().signInWithEmailAndPassword(email.value.trim(),pass.value);location.hash=""}
-    catch(e){show(authMessage(e))}
-  });
-  return f;
-}
-function authMessage(e){
-  const c=e&&e.code||"";
-  if(c.includes("invalid-credential")||c.includes("wrong-password")||c.includes("user-not-found"))return"Email or password is wrong.";
-  if(c.includes("too-many-requests"))return"Too many tries. Wait a few minutes and try again.";
-  if(c.includes("network"))return"No internet connection.";
-  return"Couldn't log in ("+c+").";
-}
-
-/* Browser download (replaces the claude.ai downloads capability) */
-const browserDownloads={
-  async save({filename,data}){
-    const blob=data instanceof Blob?data:new Blob([data],{type:filename.endsWith(".csv")?"text/csv;charset=utf-8":"application/octet-stream"});
-    const url=URL.createObjectURL(blob);
-    const a=h("a",{href:url,download:filename,hidden:true});
-    document.body.append(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),5000);
-    return{status:"saved"};
-  }
-};
-
-/* =========================================================
-   9. Boot
-   ========================================================= */
-(function boot(){
-  if(!window.firebase||FIREBASE_CONFIG.apiKey.startsWith("PASTE")){
-    $("#app").replaceChildren(h("div",{class:"panel"},h("h2",{},"Setup needed"),
-      h("p",{class:"sub"},"Open index.html, find FIREBASE_CONFIG near the top, and paste your Firebase project's settings. The README explains each step.")));
-    return;
-  }
-  firebase.initializeApp(FIREBASE_CONFIG);
-  Data.db=firebase.firestore();
-  state.downloads=browserDownloads;
-  let stopShops=null;
-
-  $("#logout").addEventListener("click",async()=>{
-    if(state.owner){await firebase.auth().signOut();toast("Logged out")}
-    else{logoutTenant();toast("Logged out")}
-  });
-  window.addEventListener("hashchange",()=>{mounted=null;render()});
-
-  Data.watchSettings(s=>{state.settings=s;render()});
-  firebase.auth().onAuthStateChanged(user=>{
-    stopShops?.();stopShops=null;
-    state.owner=!!user;state.shops=[];
-    if(user)stopShops=Data.watchShops(list=>{state.shops=list;render()});
-    mounted=null;state.ready=true;render();
-  });
-  const saved=local.get(LOGIN_KEY);if(saved)openTenant(saved);
+/* ---------- start ---------- */
+S.session = store.get(SESSION_KEY);
+document.getElementById("foot-date").textContent = fmtD(todayISO());
+render();
+(async () => {
+  const use = window.claude?.use;
+  const [db, user, dl] = use ? await Promise.all([use("db"), use("user"), use("downloads")]) : [null, null, null];
+  S.db = db; S.downloads = dl;
+  S.isOwner = user ? await user.isOwner().catch(()=>false) : false;
+  const h = (location.hash||"").slice(1);
+  S.view = h === "verify" ? "verify" : S.isOwner && h !== "login" ? (["months","invoices","settings"].includes(h) ? h : "admin") : "login";
+  if (!db){ S.dbMissing = true; S.ready = true; render(); return; }
+  db.doc("config/settings").onSnapshot(snap => { if (snap.exists){ S.settings = {...DEFAULT_SETTINGS, ...snap.data()}; if (!fieldsBusy() && S.view !== "settings") render(); } }, () => {});
+  if (S.session) subscribeMine();
+  if (S.isOwner){
+    try { const p = await db.doc("admin/pins").get(); if (p.exists) S.pins = p.data().map || {}; } catch {}
+    try { await ensureSecrets(); } catch {}
+    db.collection("units").limit(1000).onSnapshot(snap => {
+      S.units = snap.docs.map(d => ({id:d.id, ...d.data()})); S.ready = true;
+      if (!fieldsBusy()) render();
+      migrateReceipts();
+    }, () => { S.ready = true; render(); });
+    setTimeout(()=>{ if (!S.ready){ S.ready = true; render(); } }, 8000);
+  } else { S.ready = true; render(); }
+})();
 })();
 </script>
-</body>
-</html>
