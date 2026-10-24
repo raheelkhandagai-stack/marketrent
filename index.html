@@ -1,629 +1,660 @@
-<title>Market Kiraya Khata</title>
+<title>KHAN Plaza DAGAI</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: ledger app — sticky header, owner tabs (Dukanein / Nayi Dukaan / Settings), shop detail as a khata page; tenant view = code + PIN lookup + lifetime statement */
+/* Layout: brand bar; shopkeeper login (default) or landlord register (owner); shop sheet with month tick grid; invoice/receipt overlay */
 :root{
-  --bg:#FFFFFF; --surface:#FFFFFF; --sunk:#F2F6F3; --ink:#15221C; --muted:#5B6B63; --line:#CCD7D0;
-  --accent:#0D6B4E; --accent-ink:#FFFFFF; --accent-soft:#D5EBE1;
-  --due:#B3261E; --due-soft:#F8E1DE; --ok:#1F7A3F; --ok-soft:#DDF1E2; --warn:#8A5A00; --warn-soft:#F7EBCF;
-  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
-  --f-body:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
-  --r:10px; color-scheme:light;
+  --bg:#f3f5f4; --surface:#ffffff; --ink:#14302c; --muted:#5b6f6a; --line:#d6dedb;
+  --brand:#0f4a42; --brand-ink:#eaf4f1; --accent:#e8a317; --ok:#1f7a4c; --ok-bg:#e3f4ea; --bad:#a33b2b; --bad-bg:#f8e6e2; --hold:#8a5f00; --hold-bg:#fbf0d6; --scrim:rgba(10,25,22,.55);
+  --f-display:"Bricolage Grotesque",system-ui,sans-serif; --f-body:"Figtree",system-ui,sans-serif;
 }
-.paybox{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
-.paybox b{font-family:var(--f-mono);font-size:15px;overflow-wrap:anywhere}
-.pm-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end}
-@media (max-width:640px){.pm-row{grid-template-columns:1fr}}
-
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1716; --surface:#15221f; --ink:#e4efec; --muted:#93a8a2; --line:#27403b;
+  --brand:#123f38; --brand-ink:#e4f2ee; --accent:#f0b43a; --ok:#5fd394; --ok-bg:#163428; --bad:#ef8a78; --bad-bg:#3a1f1a; --hold:#f0c45e; --hold-bg:#3a2f14; --scrim:rgba(0,0,0,.65); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1716; --surface:#15221f; --ink:#e4efec; --muted:#93a8a2; --line:#27403b;
+  --brand:#123f38; --brand-ink:#e4f2ee; --accent:#f0b43a; --ok:#5fd394; --ok-bg:#163428; --bad:#ef8a78; --bad-bg:#3a1f1a; --hold:#f0c45e; --hold-bg:#3a2f14; --scrim:rgba(0,0,0,.65); color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
-.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
-header.top .wrap{display:flex;align-items:center;gap:12px;padding-block:12px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
-.mark{width:36px;height:36px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:18px;flex:none}
-.brand h1{font-family:var(--f-display);font-size:19px;margin:0;line-height:1.15;text-wrap:balance}
-.brand small{display:block;color:var(--muted);font-size:12.5px}
-nav.tabs{display:flex;flex-wrap:wrap;gap:4px;background:var(--sunk);padding:4px;border-radius:16px}
-nav.tabs button{border:0;background:transparent;color:var(--muted);font:600 13.5px var(--f-body);padding:7px 14px;border-radius:999px;cursor:pointer}
-nav.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
-main{padding-block:22px 60px;display:flex;flex-direction:column;gap:20px}
-h2{font-family:var(--f-display);font-size:24px;margin:0;text-wrap:balance}
-h3{font-family:var(--f-display);font-size:17px;margin:0}
-.lbl{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
-.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-.spread{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
-.grid{display:grid;gap:12px}
-.g2{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-.g4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
-.stat{padding:14px 16px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line)}
-.stat b{display:block;font-family:var(--f-display);font-size:24px;font-variant-numeric:tabular-nums;margin-top:2px}
-.stat.due b{color:var(--due)}
-label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600;color:var(--muted)}
-input,select,textarea{font:inherit;font-size:15px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%;min-width:0}
-textarea{min-height:64px;resize:vertical}
-input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.btn{font:600 14px var(--f-body);border-radius:8px;padding:9px 15px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.btn:hover{background:var(--sunk)}
-.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.btn.pri:hover{filter:brightness(1.08)}
-.btn.sm{padding:5px 10px;font-size:13px}
-.btn.danger{color:var(--due)}
-.btn:disabled{opacity:.55;cursor:not-allowed}
-.code{font-family:var(--f-mono);font-weight:700;letter-spacing:.04em;background:var(--accent-soft);color:var(--accent);padding:2px 8px;border-radius:6px;font-size:13px;white-space:nowrap}
-.code.big{font-size:22px;padding:6px 14px}
-.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}
-.pill.paid{background:var(--ok-soft);color:var(--ok)}
-.pill.part{background:var(--warn-soft);color:var(--warn)}
-.pill.due{background:var(--due-soft);color:var(--due)}
-.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
-table{border-collapse:collapse;width:100%;min-width:620px}
-th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;vertical-align:middle}
-th{font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--sunk)}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.bar{background:var(--brand);color:var(--brand-ink)}
+.bar .wrap{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-block:14px;flex-wrap:wrap}
+.logo{font-family:var(--f-display);font-weight:800;font-size:1.25rem;display:flex;align-items:center;gap:10px}
+.logo i{width:28px;height:22px;border-radius:3px;background:repeating-linear-gradient(var(--accent) 0 3px,transparent 3px 6px);display:inline-block}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{all:unset;cursor:pointer;padding:8px 14px;border-radius:6px;font-weight:600;font-size:.92rem;opacity:.8}
+.tab[aria-selected="true"]{background:rgba(255,255,255,.14);opacity:1}
+.tab:focus-visible{outline:3px solid var(--accent)}
+main{padding-block:28px 48px}
+.eyebrow{text-transform:uppercase;letter-spacing:.1em;font-size:.76rem;font-weight:700;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;border-radius:6px;border:2px solid transparent;cursor:pointer;font:700 .95rem var(--f-body)}
+.btn-accent{background:var(--accent);color:#1d1503}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.btn:disabled{opacity:.55;cursor:wait}
+.mini{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:5px;padding:5px 10px;cursor:pointer;font:600 .8rem var(--f-body)}
+.mini.go{background:var(--accent);color:#1d1503;border-color:transparent}
+.mini.del{color:var(--bad);border-color:var(--bad)}
+form{display:grid;gap:12px}
+label{font-size:.86rem;font-weight:600;display:grid;gap:4px}
+input,select{font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.note{font-size:.86rem;color:var(--muted);margin:0}
+.err{color:var(--bad);font-weight:600;font-size:.9rem;margin:0}
+.okmsg{background:var(--ok-bg);color:var(--ok);padding:10px 12px;border-radius:6px;font-weight:600;font-size:.92rem}
+.banner{background:var(--hold-bg);color:var(--hold);padding:12px 14px;border-radius:6px;font-size:.92rem}
+.pill{display:inline-block;font-size:.74rem;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.pill.hold{background:var(--hold-bg);color:var(--hold)}
+.num{font-variant-numeric:tabular-nums}
+.code{font-family:var(--f-display);font-weight:800}
+.pinbox{font-family:var(--f-display);font-weight:700;letter-spacing:.15em;user-select:all}
+.head{display:flex;justify-content:space-between;gap:16px;align-items:end;flex-wrap:wrap;margin-bottom:18px}
+.head h2{font-size:1.9rem}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px}
+.stat b{display:block;font-family:var(--f-display);font-size:1.45rem;font-variant-numeric:tabular-nums}
+.stat span{font-size:.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:680px;font-size:.92rem}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:.73rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--bg)}
 tr:last-child td{border-bottom:0}
-td.num,th.num{text-align:right}
-tbody tr.click{cursor:pointer}
-tbody tr.click:hover{background:var(--sunk)}
-.muted{color:var(--muted)}
-.empty{padding:34px 18px;text-align:center;color:var(--muted)}
-.empty h3{color:var(--ink);margin-bottom:6px}
-.msg{padding:10px 13px;border-radius:8px;font-size:14px}
-.msg.err{background:var(--due-soft);color:var(--due)}
-.msg.ok{background:var(--ok-soft);color:var(--ok)}
-.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 20px}
-.kv div{min-width:0}
-.kv span{display:block;font-weight:600;overflow-wrap:anywhere}
-.back{border:0;background:none;color:var(--accent);font:600 14px var(--f-body);cursor:pointer;padding:0}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;z-index:30;max-width:calc(100% - 32px)}
-.modal-bg{position:fixed;inset:0;background:rgba(5,12,9,.55);z-index:20;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:calc(24px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
-.modal{background:var(--surface);border-radius:12px;max-width:640px;width:100%;padding:18px;display:flex;flex-direction:column;gap:14px}
-/* invoice */
-.inv{background:#fff;color:#16211c;border:1px solid #cfd8d2;border-radius:8px;padding:22px;font-family:var(--f-body)}
-.inv .ih{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;border-bottom:2px solid #0D6B4E;padding-bottom:12px}
-.inv h4{font-family:var(--f-display);font-size:22px;margin:0;color:#0D6B4E}
-.inv .t{font-family:var(--f-display);font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:#5b6b63;text-align:right}
-.inv table{min-width:0;margin-top:14px}
-.inv th{background:#eef2ef;color:#5b6b63}
-.inv td,.inv th{border-bottom:1px solid #dfe6e1;padding:8px 10px}
-.inv .tot td{font-weight:700;font-size:16px;border-top:2px solid #16211c}
-.inv .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px 16px;margin-top:14px;font-size:14px}
-.inv .meta b{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#5b6b63}
-.inv .stamp{margin-top:14px;display:inline-block;border:2px solid currentColor;padding:3px 12px;border-radius:6px;font-weight:700;letter-spacing:.08em;transform:rotate(-3deg)}
-.lookup{max-width:520px;margin:30px auto 0;text-align:center;display:flex;flex-direction:column;gap:14px}
-.lookup form{display:flex;gap:8px}
-.lookup input{font-family:var(--f-mono);font-size:18px;text-transform:uppercase;letter-spacing:.06em;text-align:center}
-@media (max-width:560px){.lookup form{flex-direction:column}nav.tabs{width:100%}nav.tabs button{flex:1}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* login */
+.login{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:center}
+.login h1{font-size:clamp(2rem,4.5vw,3rem);font-weight:800;letter-spacing:-.02em}
+.login h1 em{font-style:normal;color:var(--accent)}
+.shutter{height:14px;border-radius:3px;background:repeating-linear-gradient(var(--line) 0 2px,transparent 2px 5px);margin:18px 0}
+.pin{letter-spacing:.4em;font-family:var(--f-display);font-weight:700;font-size:1.2rem}
+
+/* month tick grid */
+.months{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px}
+.mon{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--surface);display:grid;gap:6px;align-content:start}
+.mon.paid{border-color:var(--ok);background:var(--ok-bg)}
+.mon .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.mon b{font-family:var(--f-display);font-size:1.02rem}
+.tick{appearance:none;-webkit-appearance:none;width:28px;height:28px;border:2px solid var(--muted);border-radius:6px;cursor:pointer;display:grid;place-items:center;background:var(--surface);flex:none;padding:0}
+.tick:checked{background:var(--ok);border-color:var(--ok)}
+.tick:checked::after{content:"";width:8px;height:14px;border:solid var(--surface);border-width:0 3px 3px 0;transform:rotate(45deg) translate(-1px,-2px)}
+.mon .when{font-size:.8rem;color:var(--ok);font-weight:600}
+.mon .acts{display:flex;gap:6px;flex-wrap:wrap}
+
+/* methods */
+.methods{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.method{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--surface);display:grid;gap:2px}
+.method span{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.method b{font-family:var(--f-display);font-size:1.08rem;user-select:all;word-break:break-all}
+.method .mini{justify-self:start;margin-top:6px}
+
+/* overlays */
+.overlay{position:fixed;inset:0;background:var(--scrim);z-index:50;overflow-y:auto;padding-top:calc(24px + env(safe-area-inset-top,0px));padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+.sheet{max-width:880px;margin:0 auto;background:var(--bg);border-radius:12px;padding:22px;display:grid;gap:18px}
+.sheet-head{display:flex;justify-content:space-between;gap:12px;align-items:start;flex-wrap:wrap}
+.paper{background:#fff;color:#1b2b28;border-radius:6px;padding:24px;max-width:640px;margin:0 auto;width:100%;font-family:var(--f-body);border:1px solid var(--line)}
+.paper h3{font-family:var(--f-display);font-size:1.5rem;color:#0f4a42}
+.paper table{min-width:0;font-size:.92rem}
+.paper th{background:#f1f4f3;color:#5b6f6a}
+.paper td,.paper th{border-color:#dfe5e3}
+.stamp{display:inline-block;border:3px solid #1f7a4c;color:#1f7a4c;font-family:var(--f-display);font-weight:800;padding:4px 14px;border-radius:6px;transform:rotate(-6deg);letter-spacing:.1em}
+.stamp.due{border-color:#a33b2b;color:#a33b2b}
+.docbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+/* dashboard extras */
+.dash{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;margin-bottom:20px}
+.dash>*{min-width:0}
+.chart{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;align-items:end;height:170px;padding-top:8px;border-bottom:1px solid var(--line)}
+.chart .col{display:grid;align-content:end;justify-items:center;height:100%;gap:4px;min-width:0}
+.chart .barv{width:100%;max-width:34px;background:var(--brand);border-radius:4px 4px 0 0;min-height:2px}
+.chart .col.cur .barv{background:var(--accent)}
+.chart .v{font-size:.62rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.chart-x{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;font-size:.7rem;color:var(--muted);text-align:center;margin-top:4px}
+.alerts{display:grid;gap:8px;max-height:260px;overflow-y:auto}
+.alert{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid var(--line);border-left:4px solid var(--bad);border-radius:6px;padding:8px 10px;background:var(--surface);flex-wrap:wrap;font-size:.9rem}
+.alert.warn{border-left-color:var(--hold)}
+.toolbar{display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:10px}
+.toolbar input{max-width:280px}
+@media (max-width:820px){.dash{grid-template-columns:1fr}}
+@media (max-width:820px){.login{grid-template-columns:1fr}.row3{grid-template-columns:1fr 1fr}}
+@media (max-width:460px){.row2,.row3{grid-template-columns:1fr}.sheet{padding:16px}.paper{padding:16px}}
 </style>
 
-<header class="top"><div class="wrap">
-  <div class="brand"><div class="mark" id="markLetter">K</div><div style="min-width:0"><h1 id="mktName">Market Kiraya Khata</h1><small id="mktSub">Dukanon ka kiraya, ek jagah</small></div></div>
-  <nav class="tabs" id="tabs" hidden>
-    <button data-tab="shops" aria-selected="true">Dukanein</button>
-    <button data-tab="add" aria-selected="false">Nayi Dukaan</button>
-    <button data-tab="invoices" aria-selected="false">Invoices</button>
-    <button data-tab="settings" aria-selected="false">Settings</button>
-    <button data-tab="tenant" aria-selected="false">Karayadar View</button>
-  </nav>
+<header class="bar"><div class="wrap">
+  <div class="logo"><i></i><span id="brandName">City Plaza Market</span></div>
+  <div class="tabs" role="tablist" id="tabs" hidden>
+    <button class="tab" role="tab" id="tabL" aria-selected="true">Landlord panel</button>
+    <button class="tab" role="tab" id="tabE" aria-selected="false">Kharche</button>
+    <button class="tab" role="tab" id="tabR" aria-selected="false">Reports</button>
+    <button class="tab" role="tab" id="tabP" aria-selected="false">Payment methods</button>
+    <button class="tab" role="tab" id="tabS" aria-selected="false">Dukandar login</button>
+  </div>
 </div></header>
 
-<main class="wrap" id="app">
-  <div class="empty"><h3>Load ho raha hai…</h3><p>Market ka data aa raha hai.</p></div>
+<main class="wrap">
+  <div id="noDb" class="banner" hidden style="margin-bottom:16px">Website se connect nahi ho saka. Is page ko sign in kar ke kholein. Dukandar ko landlord se link share karwana hoga.</div>
+
+  <!-- SHOPKEEPER -->
+  <section id="viewS">
+    <div id="loginBox" class="login">
+      <div>
+        <span class="eyebrow">Dukandar portal</span>
+        <h1>Apna <em>kiraya, invoice aur raseed</em> dekhein</h1>
+        <div class="shutter"></div>
+        <p class="note" style="max-width:44ch;font-size:1rem">Landlord se mila Shop Code aur 6 hindson ka PIN likhein. Har mahine ka hisaab, invoice, raseed aur online payment ka tareeqa yahan milega.</p>
+      </div>
+      <form id="loginForm" class="card" novalidate>
+        <h3 style="font-size:1.25rem">Login</h3>
+        <label for="lCode">Shop Code<input id="lCode" placeholder="Misaal: G-01" autocomplete="off" autocapitalize="characters"></label>
+        <label for="lPin">PIN<input id="lPin" class="pin" inputmode="numeric" maxlength="6" placeholder="••••••" type="password" autocomplete="off"></label>
+        <button class="btn btn-accent" id="lBtn" type="submit">Login karein</button>
+        <p id="lErr" class="err" aria-live="polite"></p>
+      </form>
+    </div>
+    <div id="ledger" hidden></div>
+  </section>
+
+  <!-- LANDLORD -->
+  <section id="viewL" hidden>
+    <div id="setup" class="card" hidden>
+      <span class="eyebrow">Pehli dafa</span>
+      <h2 style="font-size:1.6rem;margin:6px 0 8px">Market set up karein</h2>
+      <p class="note" style="max-width:60ch">18 dukanein ban jayengi: Ground floor G-01 se G-10 aur First floor F-01 se F-08. Har dukan ka alag PIN khud banega. Phir har dukan mein ek dafa dukandar add karein.</p>
+      <button class="btn btn-accent" id="setupBtn" style="margin-top:14px">18 dukanein banayein</button>
+      <p id="setupErr" class="err"></p>
+    </div>
+    <div id="ll" hidden>
+      <div class="head">
+        <div><span class="eyebrow">Landlord panel</span><h2>Kiraya register</h2></div>
+        <label for="mSel" style="min-width:200px">Mahina<select id="mSel"></select></label>
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="sGot">Rs 0</b><span>Is mahine wasool</span></div>
+        <div class="stat"><b id="sLeft">Rs 0</b><span>Abhi baqi</span></div>
+        <div class="stat"><b id="sPaid">0 / 0</b><span>Dukanon ne diya</span></div>
+        <div class="stat"><b id="sExp">Rs 0</b><span>Is mahine kharcha</span></div>
+        <div class="stat"><b id="sNet">Rs 0</b><span>Net bachat</span></div>
+        <div class="stat"><b id="sSync">—</b><span>Save status</span></div>
+      </div>
+      <div class="dash">
+        <div class="card"><div class="sec" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><h3 style="font-size:1.1rem">Pichhle 12 mahine ki wasooli</h3><span class="note" id="yTot"></span></div>
+          <div class="chart" id="chart"></div><div class="chart-x" id="chartX"></div></div>
+        <div class="card"><h3 style="font-size:1.1rem;margin-bottom:10px">Tawajjuh chahiye</h3><div class="alerts" id="alerts"></div></div>
+      </div>
+      <div class="toolbar"><h3 style="font-size:1.2rem">Dukanein</h3><input id="q" type="search" placeholder="Code ya naam se dhoondein" aria-label="Dukan dhoondein"></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Code</th><th>Dukandar</th><th>Kiraya</th><th>Is mahine</th><th>PIN</th><th></th></tr></thead>
+        <tbody id="shopBody"></tbody>
+      </table></div>
+      <p class="note" style="margin-top:10px">Dukan kholein, phir jis mahine ka kiraya mila us par tick lagayein. Tick lagte hi us waqt ki tareekh aur time ke saath "Paid" ho jata hai.</p>
+    </div>
+  </section>
+
+  <!-- EXPENSES -->
+  <section id="viewE" hidden>
+    <div class="head"><div><span class="eyebrow">Market ke kharche</span><h2>Kharche</h2></div>
+      <label for="eMonth" style="min-width:200px">Mahina<select id="eMonth"></select></label></div>
+    <div class="dash">
+      <div class="tbl-wrap"><table style="min-width:520px"><thead><tr><th>Tareekh</th><th>Qism</th><th>Tafseel</th><th>Raqam</th><th></th></tr></thead><tbody id="expBody"></tbody></table></div>
+      <form id="expForm" class="card" novalidate>
+        <h3 style="font-size:1.15rem">Kharcha darj karein</h3>
+        <div class="row2"><label for="xDate">Tareekh<input id="xDate" type="date"></label>
+          <label for="xCat">Qism<select id="xCat"><option>Bijli (common)</option><option>Pani</option><option>Safai</option><option>Chowkidar / Security</option><option>Marammat (repair)</option><option>Tax / Fees</option><option>Doosra</option></select></label></div>
+        <label for="xAmt">Raqam (Rs)<input id="xAmt" inputmode="numeric"></label>
+        <label for="xNote">Tafseel<input id="xNote" placeholder="Misaal: seedhi ki light"></label>
+        <button class="btn btn-accent" type="submit" id="xBtn">Darj karein</button>
+        <p id="xOut" class="note" aria-live="polite"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- REPORTS -->
+  <section id="viewR" hidden>
+    <div class="head"><div><span class="eyebrow">Hisaab</span><h2>Reports</h2></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" id="dlCsv">Raseedein CSV</button><button class="btn btn-ghost" id="dlBak">Poora backup</button></div></div>
+    <p id="rMsg" class="note" aria-live="polite" style="margin-bottom:10px"></p>
+    <div class="tbl-wrap" style="margin-bottom:20px"><table style="min-width:560px"><thead><tr><th>Mahina</th><th>Wasool</th><th>Baqi</th><th>Kharcha</th><th>Net</th><th>Dukanein paid</th></tr></thead><tbody id="repBody"></tbody></table></div>
+    <h3 style="font-size:1.2rem;margin-bottom:10px">Dukan wise baqi</h3>
+    <div class="tbl-wrap"><table style="min-width:560px"><thead><tr><th>Code</th><th>Dukandar</th><th>Baqi mahine</th><th>Baqi raqam</th><th>Security deposit</th><th>Agreement khatam</th></tr></thead><tbody id="repShops"></tbody></table></div>
+  </section>
+
+  <!-- PAYMENT METHODS (landlord) -->
+  <section id="viewP" hidden>
+    <form id="setForm" class="card" novalidate style="max-width:760px">
+      <div><span class="eyebrow">Settings</span><h2 style="font-size:1.6rem;margin-top:4px">Online payment methods</h2>
+      <p class="note">Ye tafseel har dukandar ko us ke invoice aur login mein nazar aayegi taake wo online kiraya bhej sake. Jo tareeqa istemal nahi karte, khali chhor dein.</p></div>
+      <div class="row2"><label for="stMarket">Market ka naam<input id="stMarket"></label><label for="stAddr">Address<input id="stAddr"></label></div>
+      <div class="row2"><label for="stOwner">Landlord ka naam<input id="stOwner"></label><label for="stPhone">Landlord phone<input id="stPhone" inputmode="tel"></label></div>
+      <h3 style="font-size:1.1rem;margin-top:6px">JazzCash</h3>
+      <div class="row2"><label for="stJn">Mobile account number<input id="stJn" inputmode="tel" placeholder="03xx-xxxxxxx"></label><label for="stJt">Account title<input id="stJt"></label></div>
+      <h3 style="font-size:1.1rem">Easypaisa</h3>
+      <div class="row2"><label for="stEn">Mobile account number<input id="stEn" inputmode="tel" placeholder="03xx-xxxxxxx"></label><label for="stEt">Account title<input id="stEt"></label></div>
+      <h3 style="font-size:1.1rem">Bank account</h3>
+      <div class="row3"><label for="stBn">Bank ka naam<input id="stBn" placeholder="Misaal: Meezan Bank"></label><label for="stBi">IBAN / Account no.<input id="stBi" placeholder="PK00 XXXX ..."></label><label for="stBt">Account title<input id="stBt"></label></div>
+      <label for="stNote">Dukandar ke liye hidayat<input id="stNote" placeholder="Misaal: Paise bhej kar screenshot WhatsApp karein"></label>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn btn-accent" id="stBtn" type="submit">Save karein</button><span id="stOut" class="note" aria-live="polite"></span></div>
+    </form>
+  </section>
 </main>
 
+<div id="shopSheet" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="shTitle"><div class="sheet" id="shopInner"></div></div>
+<div id="docSheet" class="overlay" hidden role="dialog" aria-modal="true" aria-label="Invoice ya raseed"><div class="sheet">
+  <div class="docbar"><button class="btn btn-accent" id="docDl">Download</button><button class="btn btn-ghost" id="docCopy">WhatsApp ke liye copy</button><button class="btn btn-ghost" id="docClose">Band karein</button></div>
+  <p id="docMsg" class="note" style="text-align:center" aria-live="polite"></p>
+  <div id="docPaper"></div>
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
 <script>
-(function(){
-const $=s=>document.querySelector(s);
-const app=$('#app');
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const rs=n=>'Rs. '+(Math.round(Number(n)||0)).toLocaleString('en-PK');
-const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-const monthLabel=m=>{if(!m)return'';const[y,mm]=m.split('-');return MONTHS[+mm-1]+' '+y};
-const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
-const thisMonth=()=>today().slice(0,7);
-const norm=s=>String(s||'').trim().toUpperCase().replace(/\s+/g,'');
-const ALPH='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const rnd=n=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n};
-function genCode(){let s='';for(let i=0;i<6;i++)s+=ALPH[rnd(ALPH.length)];return 'MK-'+s}
-function genPin(){return String(1000+rnd(9000))}
-const uid=()=>Date.now().toString(36)+rnd(1e6).toString(36);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=n=>"Rs "+Number(n||0).toLocaleString("en-PK");
+const MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MNL=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const mLabel=k=>{const [y,m]=k.split("-");return MN[+m-1]+" "+y};
+const mLong=k=>{const [y,m]=k.split("-");return MNL[+m-1]+" "+y};
+const mk=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+const now=new Date(),curKey=mk(now);
+const addM=(k,n)=>{const [y,m]=k.split("-").map(Number);return mk(new Date(y,m-1+n,1))};
+const monthsFrom=(start)=>{const out=[];let k=start&&start<=addM(curKey,1)?start:addM(curKey,-5);const end=addM(curKey,1);while(k<=end&&out.length<36){out.push(k);k=addM(k,1)}return out.slice(-24)};
+const when=iso=>{const d=new Date(iso);if(isNaN(d))return "";let h=d.getHours(),ap=h>=12?"PM":"AM";h=h%12||12;
+  return d.getDate()+" "+MN[d.getMonth()]+" "+d.getFullYear()+", "+h+":"+String(d.getMinutes()).padStart(2,"0")+" "+ap};
+const newPin=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return String(a[0]%1000000).padStart(6,"0")};
+const DEFAULT_SET={market:"City Plaza Market",addr:"Main Bazar Road",owner:"",phone:"",jn:"",jt:"",en:"",et:"",bn:"",bi:"",bt:"",note:""};
 
-/* --- hisaab --- */
-const payList=e=>Array.isArray(e.payments)?e.payments:[];
-function entryCalc(e){const due=(+e.rent||0)+(+e.extra||0);const paid=payList(e).reduce((a,p)=>a+(+p.amount||0),0)+(+e.paid||0);return{due,paid,bal:due-paid}}
-function status(e){const c=entryCalc(e);if(c.bal<=0)return['paid','Ada'];if(c.paid>0)return['part','Kuch baqi'];return['due','Baqaya']}
-function shopTotals(s){let due=0,paid=0;(s.entries||[]).forEach(e=>{const c=entryCalc(e);due+=c.due;paid+=c.paid});return{due,paid,bal:due-paid}}
-function invNo(s,e){return 'INV-'+s.code.replace('MK-','')+'-'+e.month.replace('-','')}
-const sortE=s=>[...(s.entries||[])].sort((a,b)=>b.month.localeCompare(a.month));
-
-/* --- PIN + code se lock (karayadar ka data sirf sahi code+PIN se khulta hai) --- */
-const te=new TextEncoder();
-const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
-const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b)));
+/* ---- crypto: each shop's ledger is encrypted; only Code+PIN opens it ---- */
+const enc=new TextEncoder(),dec=new TextDecoder();
+const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");
+const b64=b=>{let s="";const u=new Uint8Array(b);for(let i=0;i<u.length;i++)s+=String.fromCharCode(u[i]);return btoa(s)};
 const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
-async function portalId(code,pin){return hex(await crypto.subtle.digest('SHA-256',te.encode('mkk-id|'+code+'|'+pin))).slice(0,40)}
-async function portalKey(code,pin){const base=await crypto.subtle.importKey('raw',te.encode(code+'|'+pin),'PBKDF2',false,['deriveKey']);
-  return crypto.subtle.deriveKey({name:'PBKDF2',salt:te.encode('mkk-v1|'+code),iterations:120000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
-async function sealShop(s){const{pin,...pub}=s;const iv=crypto.getRandomValues(new Uint8Array(12));const k=await portalKey(s.code,s.pin);
-  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},k,te.encode(JSON.stringify(pub)));return{v:1,iv:b64(iv),ct:b64(ct),updatedAt:new Date().toISOString()}}
-async function openPortal(doc,code,pin){const k=await portalKey(code,pin);const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(doc.iv)},k,unb64(doc.ct));return JSON.parse(new TextDecoder().decode(pt))}
+const norm=c=>c.trim().toUpperCase().replace(/\s+/g,"");
+async function boxId(code,pin){return hex(await crypto.subtle.digest("SHA-256",enc.encode("cpm1|"+norm(code)+"|"+pin))).slice(0,40)}
+async function keyFor(code,pin,salt){const base=await crypto.subtle.importKey("raw",enc.encode(norm(code)+"|"+pin),"PBKDF2",false,["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:150000,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])}
+async function seal(code,pin,obj){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+  const k=await keyFor(code,pin,salt);const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},k,enc.encode(JSON.stringify(obj)));
+  return {salt:b64(salt),iv:b64(iv),ct:b64(ct)}}
+async function unseal(code,pin,box){const k=await keyFor(code,pin,unb64(box.salt));
+  return JSON.parse(dec.decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(box.iv)},k,unb64(box.ct))))}
 
-let toastT;function toast(t){let el=$('.toast');if(!el){el=document.createElement('div');el.className='toast';document.body.appendChild(el)}el.textContent=t;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,2600)}
-async function copy(t){try{await navigator.clipboard.writeText(t);toast('Copy ho gaya')}catch(e){const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Copy ho gaya')}catch(_){toast('Copy nahi hua, khud select karein')}ta.remove()}}
+let DB=null,MAIN=null,mainRef=null,DL=null,openShop=null,docCur=null;
 
-let db=null,downloads=null,isAdmin=false;
-let settings={marketName:'',ownerName:'',phone:'',address:'',payMethods:[]};
-let shops=[],loaded=false,invMonth=null;
-let view={tab:'shops',shop:null,q:'',showOld:false};
-let tenantShop=null,tenantErr='',tenantCred=null,tenantUnsub=null;
-const pms=()=>Array.isArray(settings.payMethods)?settings.payMethods:[];
-const methodOptions=()=>[...new Set(['Cash',...pms().map(p=>p.title).filter(Boolean),'Bank transfer','JazzCash','Easypaisa','Cheque'])];
-function payHTML(){const l=pms();if(!l.length)return'';return `<div class="grid g2">${l.map(p=>`<div class="paybox"><span class="lbl">${esc(p.title)}</span><b style="user-select:all">${esc(p.number)}</b><span class="muted">${esc(p.holder||'')}</span></div>`).join('')}</div>`}
-const active=()=>shops.filter(s=>!s.closed);
-
-function applySettings(){
-  const n=settings.marketName||'Market Kiraya Khata';
-  $('#mktName').textContent=n;$('#markLetter').textContent=(n.trim()[0]||'K').toUpperCase();
-  $('#mktSub').textContent=settings.address||(isAdmin?'Malik panel':'Karayadar: code aur PIN se apna kiraya dekhein');
+/* ---------- invoice / receipt ---------- */
+function methodsHTML(S,paper){
+  const rows=[];
+  if(S.jn)rows.push(["JazzCash",S.jn,S.jt]);if(S.en)rows.push(["Easypaisa",S.en,S.et]);if(S.bi)rows.push([S.bn||"Bank",S.bi,S.bt]);
+  if(!rows.length)return paper?`<p style="color:#5b6f6a;font-size:.88rem">Kiraya landlord ko naqd ada karein.</p>`:"";
+  if(paper)return `<table><thead><tr><th>Online payment</th><th>Account</th><th>Title</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td><b>${esc(r[1])}</b></td><td>${esc(r[2])}</td></tr>`).join("")}</tbody></table>`;
+  return rows.map((r,i)=>`<div class="method"><span>${esc(r[0])}</span><b id="pm${i}">${esc(r[1])}</b><small class="note">${esc(r[2]||"")}</small><button class="mini" data-copyid="pm${i}">Copy</button></div>`).join("");
 }
-function refresh(){try{document.activeElement&&document.activeElement.blur()}catch(_){}render()}
-
-/* --- save: malik ka record + karayadar ka band (locked) record, dono --- */
-async function saveShop(s,{oldPin}={}){
-  await db.doc('shops/'+s.code).set(s);
-  if(s.pin){await db.doc('portal/'+await portalId(s.code,s.pin)).set(await sealShop(s))}
-  if(oldPin&&oldPin!==s.pin){try{await db.doc('portal/'+await portalId(s.code,oldPin)).delete()}catch(_){}}
-}
-const clone=s=>JSON.parse(JSON.stringify(s));
-
-/* ---------- render ---------- */
-function render(){
-  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===view.tab)));
-  if(!db){app.innerHTML=`<div class="panel empty"><h3>Data nahi khul raha</h3><p>Is page ko dekhne ke liye claude.ai par sign in karein, phir page reload karein.</p></div>`;return}
-  if(!isAdmin||view.tab==='tenant')return renderTenant();
-  if(view.tab==='add')return renderAdd();
-  if(view.tab==='settings')return renderSettings();
-  if(view.tab==='invoices')return renderInvoices();
-  if(view.shop)return renderShop();
-  return renderShops();
-}
-
-function renderShops(){
-  const m=thisMonth();const act=active();
-  let tDue=0,tPaid=0,monthIn=0,pendingMonth=0;
-  act.forEach(s=>{const t=shopTotals(s);tDue+=t.due;tPaid+=t.paid;const e=(s.entries||[]).find(x=>x.month===m);if(e)monthIn+=entryCalc(e).paid;if(!e||entryCalc(e).bal>0)pendingMonth++});
-  const q=norm(view.q);const base=view.showOld?shops.filter(s=>s.closed):act;
-  const list=base.filter(s=>!q||norm(s.shopNo).includes(q)||norm(s.tenant).includes(q)||norm(s.code).includes(q)).sort((a,b)=>String(a.shopNo).localeCompare(String(b.shopNo),undefined,{numeric:true}));
-  const noPin=shops.filter(s=>!s.pin);const oldCount=shops.length-act.length;
-  app.innerHTML=`
-  <div class="spread"><h2>${view.showOld?'Purane karayadar':'Dukanein'}</h2><div class="row">${oldCount?`<button class="btn" id="tglOld">${view.showOld?'Mojooda dukanein':'Purane karayadar ('+oldCount+')'}</button>`:''}<button class="btn pri" id="goAdd">+ Nayi Dukaan</button></div></div>
-  ${noPin.length?`<div class="msg err spread"><span>${noPin.length} dukanon ka PIN abhi nahi bana. PIN ke baghair karayadar apna data nahi dekh sakta.</span><button class="btn sm pri" id="mkPins">Sab ke PIN banayein</button></div>`:''}
-  <div class="grid g4">
-    <div class="stat"><span class="lbl">Mojooda dukanein</span><b>${act.length}</b></div>
-    <div class="stat"><span class="lbl">${esc(monthLabel(m))} wasooli</span><b>${rs(monthIn)}</b></div>
-    <div class="stat"><span class="lbl">Is mahine baqi dukanein</span><b>${pendingMonth}</b></div>
-    <div class="stat due"><span class="lbl">Kul baqaya</span><b>${rs(tDue-tPaid)}</b></div>
-  </div>
-  ${shops.length?`<input id="q" type="search" placeholder="Dukaan number, naam ya code se dhoondein" value="${esc(view.q)}">`:''}
-  ${!loaded?`<div class="panel empty"><h3>Load ho raha hai…</h3></div>`:
-   !shops.length?`<div class="panel empty"><h3>Abhi koi dukaan add nahi hui</h3><p>"Nayi Dukaan" se market ki dukanein add karein. Har dukaan ko pakka code aur PIN milega.</p></div>`:
-   `<div class="tbl-wrap"><table><thead><tr><th>Dukaan #</th><th>Karayadar</th><th>Code</th><th class="num">Mahana kiraya</th><th>${esc(monthLabel(m))}</th><th class="num">Kul baqaya</th></tr></thead><tbody>
-   ${list.map(s=>{const t=shopTotals(s);const e=(s.entries||[]).find(x=>x.month===m);const st=s.closed?['part','Dukaan chhor di']:e?status(e):['due','Nahi likha'];
-     return `<tr class="click" data-code="${esc(s.code)}"><td><b>${esc(s.shopNo)}</b></td><td>${esc(s.tenant)}<div class="muted" style="font-size:13px">${esc(s.phone||'')}</div></td><td><span class="code">${esc(s.code)}</span></td><td class="num">${rs(s.monthlyRent)}</td><td><span class="pill ${st[0]}">${st[1]}</span></td><td class="num" style="${t.bal>0?'color:var(--due);font-weight:600':''}">${rs(t.bal)}</td></tr>`}).join('')}
-   ${!list.length?`<tr><td colspan="6" class="muted">Koi dukaan nahi mili.</td></tr>`:''}
-   </tbody></table></div>`}`;
-  $('#goAdd').onclick=()=>{view.tab='add';render()};
-  const to=$('#tglOld');if(to)to.onclick=()=>{view.showOld=!view.showOld;renderShops()};
-  const mp=$('#mkPins');if(mp)mp.onclick=async()=>{mp.disabled=true;try{for(const s of noPin){const n=clone(s);n.pin=genPin();await saveShop(n)}toast('Sab dukanon ke PIN ban gaye')}catch(e){toast('Nahi hua: '+(e.code||e.message))}refresh()};
-  const qi=$('#q');if(qi){qi.oninput=()=>{view.q=qi.value;const p=qi.selectionStart;renderShops();const n=$('#q');n.focus();n.setSelectionRange(p,p)}}
-  app.querySelectorAll('tr.click').forEach(tr=>tr.onclick=()=>{view.shop=tr.dataset.code;render()});
-}
-
-function newShopDoc(f){return{code:f.code,pin:genPin(),shopNo:f.shopNo,shopKey:norm(f.shopNo),tenant:f.tenant,phone:f.phone||'',cnic:f.cnic||'',monthlyRent:+f.monthlyRent||0,
-  startDate:f.startDate||today(),security:+f.security||0,business:f.business||'',note:f.note||'',entries:[],closed:false,createdAt:new Date().toISOString()}}
-async function freshCode(){let code;for(let i=0;i<8;i++){code=genCode();if(shops.some(s=>s.code===code))continue;const ex=await db.doc('shops/'+code).get();if(!ex.exists)return code}return code}
-
-function renderAdd(){
-  app.innerHTML=`
-  <h2>Nayi Dukaan Add Karein</h2>
-  <p class="muted" style="margin:0;max-width:65ch">Har dukaan sirf ek baar add hoti hai. Add karte hi karayadar ka pakka code aur PIN ban jata hai. Code kabhi nahi badalta. Phir har mahine ka kiraya aur payment usi dukaan mein likhein.</p>
-  <form class="panel grid" id="addForm" style="gap:14px">
-    <div class="grid g2">
-      <label class="f">Dukaan number *<input id="a_no" required placeholder="maslan 12 ya A-07"></label>
-      <label class="f">Karayadar ka naam *<input id="a_tenant" required placeholder="maslan Muhammad Aslam"></label>
-      <label class="f">Mobile number<input id="a_phone" inputmode="tel" placeholder="03xx-xxxxxxx"></label>
-      <label class="f">CNIC<input id="a_cnic" placeholder="xxxxx-xxxxxxx-x"></label>
-      <label class="f">Mahana kiraya (Rs.) *<input id="a_rent" type="number" min="0" step="1" required placeholder="15000"></label>
-      <label class="f">Kiraya shuru tareekh<input id="a_start" type="date" value="${today()}"></label>
-      <label class="f">Security / advance (Rs.)<input id="a_sec" type="number" min="0" step="1" placeholder="0"></label>
-      <label class="f">Karobar<input id="a_biz" placeholder="maslan Kiryana store"></label>
+const serialOf=p=>"SR-"+String(parseInt(String(p.rno||"").replace(/\D/g,""),10)||0).padStart(6,"0");
+const invNo=(shop,month)=>"INV-"+shop.code+"-"+month.replace("-","");
+function words(n){n=Math.floor(Number(n)||0);if(!n)return "Zero";
+  const a=["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"],t=["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+  const two=x=>x<20?a[x]:t[Math.floor(x/10)]+(x%10?" "+a[x%10]:""),three=x=>(x>=100?a[Math.floor(x/100)]+" Hundred"+(x%100?" ":""):"")+(x%100?two(x%100):"");
+  const parts=[];const cr=Math.floor(n/1e7);n%=1e7;const lk=Math.floor(n/1e5);n%=1e5;const th=Math.floor(n/1e3);n%=1e3;
+  if(cr)parts.push(three(cr)+" Crore");if(lk)parts.push(two(lk)+" Lakh");if(th)parts.push(two(th)+" Thousand");if(n)parts.push(three(n));return parts.join(" ")}
+const RCSS=`.rc{background:#fff;color:#16302b;max-width:680px;margin:0 auto;border-radius:10px;overflow:hidden;border:1px solid #d9e2df;font-family:"Figtree",system-ui,sans-serif;position:relative;line-height:1.45}
+.rc-top{background:#0f4a42;color:#eaf4f1;padding:20px 24px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+.rc-logo{display:flex;gap:12px;align-items:center}.rc-mark{width:40px;height:32px;border-radius:4px;flex:none;background:repeating-linear-gradient(#e8a317 0 4px,transparent 4px 8px)}
+.rc-name{font:800 1.3rem "Bricolage Grotesque",system-ui,sans-serif}.rc-sub{font-size:.8rem;opacity:.8}
+.rc-type{text-align:right}.rc-type b{display:block;font:800 1.05rem "Bricolage Grotesque",system-ui,sans-serif;letter-spacing:.16em}.rc-type span{font-size:.8rem;opacity:.85;display:block}
+.rc-serial{font:700 .95rem ui-monospace,Menlo,Consolas,monospace;background:#e8a317;color:#1d1503;padding:3px 10px;border-radius:4px;display:inline-block;margin-top:6px;letter-spacing:.04em}
+.rc-body{padding:22px 24px;display:grid;gap:18px;position:relative}
+.rc-amt{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center;border:1px solid #d9e2df;border-radius:8px;padding:16px;background:#f6f9f8}
+.rc-amt small,.rc-grid small{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:#5b6f6a;font-weight:700}
+.rc-amt b{font:800 2rem "Bricolage Grotesque",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.rc-words{font-size:.85rem;color:#33504a;font-style:italic}
+.rc-stamp{border:3px solid #1f7a4c;color:#1f7a4c;font:800 1.3rem "Bricolage Grotesque",system-ui,sans-serif;padding:6px 18px;border-radius:8px;transform:rotate(-8deg);letter-spacing:.14em;text-align:center;line-height:1.1}
+.rc-stamp small{display:block;font-size:.6rem;letter-spacing:.04em;font-weight:700}.rc-stamp.due{border-color:#a33b2b;color:#a33b2b}
+.rc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px}
+.rc-grid div{border-bottom:1px dashed #d9e2df;padding-bottom:6px;min-width:0}.rc-grid b{font-weight:600;word-break:break-word}
+.rc table{border-collapse:collapse;width:100%;min-width:0;font-size:.9rem}
+.rc th,.rc td{text-align:left;padding:8px 10px;border-bottom:1px solid #e3e9e7;background:none;color:inherit}
+.rc th{background:#f1f5f4;color:#5b6f6a;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em}
+.rc .r{text-align:right;font-variant-numeric:tabular-nums}.rc tr.tot td{font-weight:800;border-bottom:2px solid #16302b}
+.rc-foot{display:flex;justify-content:space-between;gap:16px;align-items:end;flex-wrap:wrap;border-top:1px solid #e3e9e7;padding-top:16px}
+.rc-codes{display:flex;gap:16px;align-items:end;flex-wrap:wrap}
+.rc-qr{width:100px;height:100px;background:#fff}.rc-qr img,.rc-qr canvas{width:100px!important;height:100px!important;display:block}
+.rc-bc svg{height:58px;width:auto;max-width:230px;display:block}
+.rc-cap{font-size:.65rem;color:#5b6f6a;text-transform:uppercase;letter-spacing:.08em;margin-top:4px;text-align:center}
+.rc-sign{text-align:center;min-width:170px}.rc-sign div{border-top:1px solid #16302b;margin-top:38px;padding-top:4px;font-size:.78rem;color:#5b6f6a}
+.rc-note{font-size:.75rem;color:#5b6f6a;text-align:center;background:#f6f9f8;padding:10px 24px;border-top:1px solid #e3e9e7}
+.rc-wm{position:absolute;right:10px;top:38%;font:800 5.5rem "Bricolage Grotesque",system-ui,sans-serif;color:rgba(31,122,76,.06);transform:rotate(-18deg);pointer-events:none;letter-spacing:.1em}
+.rc-wm.due{color:rgba(163,59,43,.06)}
+@media(max-width:520px){.rc-grid{grid-template-columns:1fr}.rc-amt b{font-size:1.6rem}.rc-top,.rc-body{padding:16px}.rc-type{text-align:left}}`;
+(()=>{const st=document.createElement("style");st.textContent=RCSS;document.head.appendChild(st)})();
+function docHTML(kind,S,shop,month,pay){
+  const isR=kind==="receipt",no=isR?serialOf(pay):invNo(shop,month),amt=isR?pay.amount:shop.rent;
+  const issued=isR?when(pay.paidAt):"1 "+mLabel(month);
+  const qr=isR?`${S.market}\nRECEIPT ${no}\nShop ${shop.code}${shop.tenant?" - "+shop.tenant:""}\nMonth ${mLong(month)}\nAmount ${fmt(amt)}\nPaid ${when(pay.paidAt)} (${pay.method})\nStatus PAID`
+    :`${S.market}\nINVOICE ${no}\nShop ${shop.code}\nMonth ${mLong(month)}\nDue ${fmt(amt)} by 5 ${mLabel(month)}`+(S.jn?`\nJazzCash ${S.jn}`:"")+(S.en?`\nEasypaisa ${S.en}`:"")+(S.bi?`\n${S.bn||"Bank"} ${S.bi}`:"");
+  return `<div class="rc">
+    <div class="rc-top">
+      <div class="rc-logo"><div class="rc-mark"></div><div><div class="rc-name">${esc(S.market)}</div><div class="rc-sub">${esc(S.addr)}${S.phone?" · "+esc(S.phone):""}</div></div></div>
+      <div class="rc-type"><b>${isR?"RENT RECEIPT":"RENT INVOICE"}</b><span>${isR?"Kiraya raseed":"Kiraya bill"}</span><span class="rc-serial">${isR?"Serial":"No."} ${esc(no)}</span></div>
     </div>
-    <label class="f">Note<textarea id="a_note" placeholder="Koi aur detail"></textarea></label>
-    <div id="addMsg"></div>
-    <div class="row"><button class="btn pri" type="submit" id="addBtn">Dukaan Save Karein</button><button class="btn" type="button" id="addCancel">Wapas</button></div>
-  </form>
-  <div class="panel grid" style="gap:12px"><h3>Poori market ki dukanein ek saath add karein</h3>
-    <p class="muted" style="margin:0;font-size:13.5px;max-width:65ch">Har line mein ek dukaan likhein: <b>Dukaan number, Karayadar naam, Mobile, Mahana kiraya</b>. Jo dukaan pehle se add hai woh dobara add nahi hogi. Har dukaan ko apna code aur PIN milega.</p>
-    <label class="f">Dukanon ki list<textarea id="bulkText" style="min-height:140px;font-family:var(--f-mono);font-size:14px" placeholder="1, Muhammad Aslam, 0300-1111111, 15000&#10;2, Bilal Ahmed, 0301-2222222, 12000&#10;3, Usman Ali, 0333-3333333, 18000"></textarea></label>
-    <div id="bulkMsg"></div>
-    <div class="row"><button class="btn pri" type="button" id="bulkBtn">Sab dukanein add karein</button></div>
-  </div>`;
-  $('#addCancel').onclick=()=>{view.tab='shops';render()};
-  $('#bulkBtn').onclick=()=>{const t=$('#bulkText').value;if(!t.trim()){$('#bulkMsg').innerHTML='<div class="msg err">Pehle list likhein.</div>';return}bulkAdd(t,$('#bulkMsg'),$('#bulkBtn'))};
-  $('#addForm').onsubmit=async ev=>{
-    ev.preventDefault();const msg=$('#addMsg');const no=$('#a_no').value.trim();
-    const dup=active().find(s=>norm(s.shopNo)===norm(no));
-    if(dup){msg.innerHTML=`<div class="msg err">Dukaan ${esc(no)} pehle se add hai (karayadar: ${esc(dup.tenant)}, code ${esc(dup.code)}). Ek dukaan sirf ek baar add hoti hai. Agar karayadar badla hai to us dukaan mein "Karayadar ne dukaan chhor di" dabayein, phir naya add karein.</div>`;return}
-    const btn=$('#addBtn');btn.disabled=true;btn.textContent='Save ho raha hai…';
-    try{
-      const s=newShopDoc({code:await freshCode(),shopNo:no,tenant:$('#a_tenant').value.trim(),phone:$('#a_phone').value.trim(),cnic:$('#a_cnic').value.trim(),
-        monthlyRent:$('#a_rent').value,startDate:$('#a_start').value,security:$('#a_sec').value,business:$('#a_biz').value.trim(),note:$('#a_note').value.trim()});
-      await saveShop(s);view.tab='shops';view.shop=s.code;refresh();toast('Dukaan add ho gayi. Code '+s.code+', PIN '+s.pin);
-    }catch(e){btn.disabled=false;btn.textContent='Dukaan Save Karein';msg.innerHTML=`<div class="msg err">Save nahi hua (${esc(e.code||e.message)}). Dobara koshish karein.</div>`}
-  };
-}
-async function bulkAdd(text,msgEl,btn){
-  const lines=text.split(/\n/).map(l=>l.trim()).filter(Boolean);
-  const seen=new Set(active().map(s=>norm(s.shopNo)));let added=[],skipped=[],bad=[];
-  btn.disabled=true;btn.textContent='Add ho rahi hain…';
-  for(const l of lines){
-    const p=l.split(/[,\t]/).map(x=>x.trim());
-    const no=p[0],tenant=p[1],phone=p[2]||'',rent=String(p[3]||'').replace(/[^0-9.]/g,'');
-    if(!no||!tenant){bad.push(l);continue}
-    if(seen.has(norm(no))){skipped.push(no);continue}
-    try{const s=newShopDoc({code:await freshCode(),shopNo:no,tenant,phone,monthlyRent:rent});await saveShop(s);shops.push(s);seen.add(norm(no));added.push(no)}catch(e){bad.push(l)}
-  }
-  btn.disabled=false;btn.textContent='Sab dukanein add karein';
-  msgEl.innerHTML=`<div class="msg ${added.length?'ok':'err'}">${added.length} dukanein add ho gayin${added.length?': '+esc(added.join(', ')):''}.${skipped.length?`<br>Pehle se mojood, chhor di gayin: ${esc(skipped.join(', '))}.`:''}${bad.length?`<br>Yeh lines samajh nahi aayin: ${esc(bad.join(' | '))}`:''}</div>`;
-  if(added.length)$('#bulkText').value='';
-}
-
-function tenantMsg(s){const t=shopTotals(s);return `Assalam o Alaikum ${s.tenant},\n${settings.marketName||'Market'} — Dukaan ${s.shopNo}\n\nAap ka karayadar code: ${s.code}\nAap ka PIN: ${s.pin}\n\nIs code aur PIN se aap apna poora kiraya record aur invoice dekh sakte hain.\nAbhi baqaya: ${rs(t.bal)}${pms().length?'\n\nKiraya jama karwane ke liye:\n'+pms().map(p=>`${p.title}: ${p.number}${p.holder?' ('+p.holder+')':''}`).join('\n'):''}`}
-
-function renderShop(){
-  const s=shops.find(x=>x.code===view.shop);
-  if(!s){view.shop=null;return renderShops()}
-  const t=shopTotals(s);const entries=sortE(s);
-  const editing=view.editEntry?entries.find(e=>e.month===view.editEntry):null;
-  const def=editing||{month:thisMonth(),rent:s.monthlyRent,extra:0,extraNote:'',note:''};
-  const openBills=entries.filter(e=>entryCalc(e).bal>0);
-  const payFor=view.payMonth&&entries.find(e=>e.month===view.payMonth)?view.payMonth:(openBills[openBills.length-1]||entries[0]||{}).month;
-  const payDef=payFor?Math.max(entryCalc(entries.find(e=>e.month===payFor)).bal,0):0;
-  app.innerHTML=`
-  <button class="back" id="back">← Sab dukanein</button>
-  ${s.closed?`<div class="msg err">Is karayadar ne ${esc(s.closedAt||'')} ko dukaan chhor di. Is ka poora record mehfooz hai aur woh code + PIN se ab bhi dekh sakta hai.</div>`:''}
-  <div class="spread"><div><span class="lbl">Dukaan</span><h2>${esc(s.shopNo)} · ${esc(s.tenant)}</h2></div>
-    <div class="row"><div><span class="lbl">Code</span><div><span class="code big">${esc(s.code)}</span></div></div><div><span class="lbl">PIN</span><div><span class="code big" style="letter-spacing:.2em">${esc(s.pin||'—')}</span></div></div></div></div>
-  <div class="row"><button class="btn sm" id="cpMsg">Code + PIN ka message copy</button><button class="btn sm" id="newPin">${view.pinArm?'Haan, naya PIN banayein':'PIN badlein'}</button><span class="muted" style="font-size:13px">Code kabhi nahi badalta. PIN zarurat par badal sakte hain.</span></div>
-  <div class="grid g4">
-    <div class="stat"><span class="lbl">Mahana kiraya</span><b>${rs(s.monthlyRent)}</b></div>
-    <div class="stat"><span class="lbl">Kul banta hai</span><b>${rs(t.due)}</b></div>
-    <div class="stat"><span class="lbl">Kul jama</span><b>${rs(t.paid)}</b></div>
-    <div class="stat ${t.bal>0?'due':''}"><span class="lbl">Baqaya</span><b>${rs(t.bal)}</b></div>
-  </div>
-  <div class="panel">
-    <div class="spread" style="margin-bottom:12px"><h3>Dukaan ki detail</h3><button class="btn sm" id="editInfo">${view.editInfo?'Band karein':'Detail badlein'}</button></div>
-    ${view.editInfo?`<form id="infoForm" class="grid" style="gap:12px"><div class="grid g2">
-      <label class="f">Karayadar ka naam<input id="i_tenant" value="${esc(s.tenant)}" required></label>
-      <label class="f">Mobile<input id="i_phone" value="${esc(s.phone)}"></label>
-      <label class="f">CNIC<input id="i_cnic" value="${esc(s.cnic)}"></label>
-      <label class="f">Mahana kiraya (Rs.)<input id="i_rent" type="number" min="0" value="${esc(s.monthlyRent)}"></label>
-      <label class="f">Security (Rs.)<input id="i_sec" type="number" min="0" value="${esc(s.security||0)}"></label>
-      <label class="f">Karobar<input id="i_biz" value="${esc(s.business)}"></label></div>
-      <label class="f">Note<textarea id="i_note">${esc(s.note)}</textarea></label>
-      <div class="row"><button class="btn pri" type="submit">Detail save karein</button></div></form>`:
-    `<div class="kv">
-      <div><span class="lbl">Mobile</span><span>${esc(s.phone||'—')}</span></div>
-      <div><span class="lbl">CNIC</span><span>${esc(s.cnic||'—')}</span></div>
-      <div><span class="lbl">Karobar</span><span>${esc(s.business||'—')}</span></div>
-      <div><span class="lbl">Shuru tareekh</span><span>${esc(s.startDate||'—')}</span></div>
-      <div><span class="lbl">Security</span><span>${rs(s.security||0)}</span></div>
-      <div><span class="lbl">Note</span><span>${esc(s.note||'—')}</span></div></div>`}
-  </div>
-  <div class="grid g2" style="align-items:start">
-  <form class="panel grid" id="entryForm" style="gap:12px">
-    <div class="spread"><h3>${editing?'Bill badlein: '+esc(monthLabel(editing.month)):'1. Mahine ka kiraya (bill) likhein'}</h3>${editing?'<button class="btn sm" type="button" id="cancelEdit">Naya likhein</button>':''}</div>
-    <label class="f">Mahina<input id="e_month" type="month" value="${esc(def.month)}" ${editing?'disabled':''} required></label>
-    <label class="f">Kiraya (Rs.)<input id="e_rent" type="number" min="0" value="${esc(def.rent)}" required></label>
-    <label class="f">Bijli / pani / deegar (Rs.)<input id="e_extra" type="number" min="0" value="${esc(def.extra||0)}"></label>
-    <label class="f">Deegar ki tafseel<input id="e_extraNote" value="${esc(def.extraNote||'')}" placeholder="maslan Bijli bill"></label>
-    <label class="f">Note<input id="e_note" value="${esc(def.note||'')}"></label>
-    <div id="entryMsg"></div>
-    <div class="row"><button class="btn pri" type="submit" id="entryBtn">${editing?'Tabdeeli save karein':'Bill save karein'}</button></div>
-  </form>
-  <form class="panel grid" id="payForm" style="gap:12px">
-    <h3>2. Payment jama karein</h3>
-    ${entries.length?`
-    <label class="f">Kis mahine ki payment<select id="p_month">${entries.map(e=>{const c=entryCalc(e);return `<option value="${esc(e.month)}" ${e.month===payFor?'selected':''}>${esc(monthLabel(e.month))} — baqi ${rs(Math.max(c.bal,0))}</option>`}).join('')}</select></label>
-    <label class="f">Raqam (Rs.)<input id="p_amt" type="number" min="1" value="${esc(payDef||'')}" required></label>
-    <label class="f">Tareeqa<select id="p_method">${methodOptions().map(m=>`<option>${esc(m)}</option>`).join('')}</select></label>
-    <label class="f">Transaction ID / reference<input id="p_ref" placeholder="maslan JazzCash TID"></label>
-    <label class="f">Tareekh<input id="p_date" type="date" value="${today()}"></label>
-    <div id="payMsg"></div>
-    <div class="row"><button class="btn pri" type="submit" id="payBtn">Payment jama karein</button></div>`
-    :`<p class="muted" style="margin:0">Pehle baen taraf se mahine ka bill likhein, phir yahan payment jama karein.</p>`}
-  </form>
-  </div>
-  <div class="spread"><h3>Poori umar ka kiraya record</h3><span class="muted">${entries.length} mahine · kabhi delete nahi hota</span></div>
-  ${entries.length?entryTable(s,entries,true):`<div class="panel empty"><h3>Abhi koi mahina nahi likha</h3><p>Upar se is mahine ka bill likhein.</p></div>`}
-  ${!s.closed?`<div class="panel spread"><div><h3>Karayadar ne dukaan chhor di?</h3><p class="muted" style="margin:4px 0 0">Record mehfooz rahega, sirf dukaan khaali ho jayegi aur us par naya karayadar add ho sakega.</p></div><button class="btn danger" id="closeShop">${view.confirmClose?'Haan, dukaan khaali karein':'Karayadar ne dukaan chhor di'}</button></div>`:''}`;
-  $('#back').onclick=()=>{Object.assign(view,{shop:null,editEntry:null,editInfo:false,confirmClose:false,pinArm:false,payMonth:null});render()};
-  $('#cpMsg').onclick=()=>copy(tenantMsg(s));
-  $('#newPin').onclick=async()=>{if(!view.pinArm){view.pinArm=true;renderShop();return}view.pinArm=false;const n=clone(s);n.pin=genPin();try{await saveShop(n,{oldPin:s.pin});toast('Naya PIN: '+n.pin+'. Karayadar ko bata dein.')}catch(e){toast('Nahi hua: '+(e.code||e.message))}refresh()};
-  $('#editInfo').onclick=()=>{view.editInfo=!view.editInfo;renderShop()};
-  const inf=$('#infoForm');if(inf)inf.onsubmit=async ev=>{ev.preventDefault();const n=clone(s);Object.assign(n,{tenant:$('#i_tenant').value.trim(),phone:$('#i_phone').value.trim(),cnic:$('#i_cnic').value.trim(),monthlyRent:+$('#i_rent').value||0,security:+$('#i_sec').value||0,business:$('#i_biz').value.trim(),note:$('#i_note').value.trim()});
-    try{await saveShop(n);view.editInfo=false;toast('Detail save ho gayi')}catch(e){toast('Save nahi hua: '+(e.code||e.message))}refresh()};
-  const ce=$('#cancelEdit');if(ce)ce.onclick=()=>{view.editEntry=null;renderShop()};
-  $('#entryForm').onsubmit=async ev=>{
-    ev.preventDefault();const msg=$('#entryMsg');const month=editing?editing.month:$('#e_month').value;
-    if(!month){msg.innerHTML='<div class="msg err">Mahina chunein.</div>';return}
-    if(!editing&&(s.entries||[]).some(e=>e.month===month)){msg.innerHTML=`<div class="msg err">${esc(monthLabel(month))} ka bill pehle se likha hai. Record mein "Bill badlein" dabayein.</div>`;return}
-    const n=clone(s);const old=(n.entries||[]).find(e=>e.month===month);
-    const e={...(old||{payments:[]}),month,rent:+$('#e_rent').value||0,extra:+$('#e_extra').value||0,extraNote:$('#e_extraNote').value.trim(),note:$('#e_note').value.trim()};
-    n.entries=(n.entries||[]).filter(x=>x.month!==month);n.entries.push(e);
-    $('#entryBtn').disabled=true;
-    try{await saveShop(n);view.editEntry=null;view.payMonth=month;toast(monthLabel(month)+' ka bill save ho gaya')}catch(er){toast('Save nahi hua: '+(er.code||er.message))}refresh()};
-  const pf=$('#payForm');const pm=$('#p_month');
-  if(pm)pm.onchange=()=>{view.payMonth=pm.value;const e=entries.find(x=>x.month===pm.value);$('#p_amt').value=Math.max(entryCalc(e).bal,0)||''};
-  if(pm)pf.onsubmit=async ev=>{ev.preventDefault();const amt=+$('#p_amt').value;if(!(amt>0)){$('#payMsg').innerHTML='<div class="msg err">Raqam likhein.</div>';return}
-    const n=clone(s);const e=n.entries.find(x=>x.month===pm.value);e.payments=payList(e);const np={id:uid(),amount:amt,method:$('#p_method').value,ref:$('#p_ref').value.trim(),date:$('#p_date').value||today()};e.payments.push(np);
-    $('#payBtn').disabled=true;try{await saveShop(n);toast(rs(amt)+' jama ho gaye ('+monthLabel(e.month)+')');refresh();openReceipt(n,e,np);return}catch(er){toast('Save nahi hua: '+(er.code||er.message))}refresh()};
-  bindEntryTable(s);
-  app.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{view.editEntry=b.dataset.edit;renderShop();$('#entryForm').scrollIntoView({block:'start'})});
-  app.querySelectorAll('[data-undo]').forEach(b=>b.onclick=async()=>{
-    if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Pakka?';setTimeout(()=>{if(b.isConnected){b.dataset.armed='';b.textContent='Ghalat'}},3000);return}
-    const[mo,pid]=b.dataset.undo.split('|');const n=clone(s);const e=n.entries.find(x=>x.month===mo);const p=payList(e).find(x=>x.id===pid);if(p){p.void=true;p.amountWas=p.amount;p.amount=0}
-    try{await saveShop(n);toast('Payment ghalat mark ho gayi (record mein rahegi)')}catch(er){toast('Nahi hua')}refresh()});
-  const cs=$('#closeShop');if(cs)cs.onclick=async()=>{if(!view.confirmClose){view.confirmClose=true;renderShop();return}
-    const n=clone(s);n.closed=true;n.closedAt=today();try{await saveShop(n);view.confirmClose=false;toast('Dukaan khaali. Record mehfooz hai.')}catch(e){toast('Nahi hua: '+(e.code||e.message))}refresh()};
-}
-
-function entryTable(s,entries,owner){
-  return `<div class="tbl-wrap"><table><thead><tr><th>Mahina</th><th class="num">Kiraya</th><th class="num">Deegar</th><th class="num">Kul</th><th class="num">Jama</th><th class="num">Baqi</th><th>Halat</th><th></th></tr></thead><tbody>
-  ${entries.map(e=>{const c=entryCalc(e);const st=status(e);const ps=payList(e);
-    return `<tr><td><b>${esc(monthLabel(e.month))}</b>${e.note?`<div class="muted" style="font-size:12.5px">${esc(e.note)}</div>`:''}</td><td class="num">${rs(e.rent)}</td><td class="num">${rs(e.extra)}${e.extraNote?`<div class="muted" style="font-size:12.5px">${esc(e.extraNote)}</div>`:''}</td><td class="num">${rs(c.due)}</td><td class="num">${rs(c.paid)}</td><td class="num">${rs(Math.max(c.bal,0))}</td><td><span class="pill ${st[0]}">${st[1]}</span></td>
-    <td><div class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn sm pri" data-inv="${esc(e.month)}">Invoice</button>${owner?`<button class="btn sm" data-edit="${esc(e.month)}">Bill badlein</button>`:''}</div></td></tr>
-    ${ps.length||(+e.paid)?`<tr><td colspan="8" style="background:var(--sunk);padding:8px 12px 10px 28px"><span class="lbl">Payments</span>
-      ${(+e.paid)?`<div style="font-size:13.5px">${rs(e.paid)} · pehle se likha</div>`:''}
-      ${ps.map(p=>`<div class="row" style="gap:10px;font-size:13.5px;${p.void?'text-decoration:line-through;color:var(--muted)':''}"><b>${rs(p.void?p.amountWas:p.amount)}</b><span>${esc(p.date)}</span><span>${esc(p.method)}</span>${p.ref?`<span class="code" style="font-size:12px">${esc(p.ref)}</span>`:''}${p.void?'<span>(ghalat, cancel)</span>':''}${!p.void?`<button class="btn sm" data-rcp="${esc(e.month)}|${esc(p.id)}">Raseed</button>`:''}${owner&&!p.void?`<button class="btn sm danger" data-undo="${esc(e.month)}|${esc(p.id)}">Ghalat</button>`:''}</div>`).join('')}
-    </td></tr>`:''}`}).join('')}
-  ${entries.length>1?(()=>{const t=shopTotals(s);return `<tr><td><b>Kul</b></td><td></td><td></td><td class="num"><b>${rs(t.due)}</b></td><td class="num"><b>${rs(t.paid)}</b></td><td class="num" style="${t.bal>0?'color:var(--due)':''}"><b>${rs(t.bal)}</b></td><td colspan="2"></td></tr>`})():''}
-  </tbody></table></div>`;
-}
-function bindEntryTable(s){app.querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>openInvoice(s,s.entries.find(e=>e.month===b.dataset.inv)));
-  app.querySelectorAll('[data-rcp]').forEach(b=>b.onclick=()=>{const[mo,pid]=b.dataset.rcp.split('|');const e=s.entries.find(x=>x.month===mo);openReceipt(s,e,payList(e).find(x=>x.id===pid))})}
-
-function renderSettings(){
-  const list=pms().map(p=>({...p}));let draft=null;
-  const draw=()=>{
-  app.innerHTML=`<h2>Market Settings</h2>
-  <form class="panel grid" id="setForm" style="gap:14px"><h3>Market ki maloomat</h3><div class="grid g2">
-    <label class="f">Market ka naam<input id="s_name" value="${esc(draft?draft.marketName:settings.marketName)}" placeholder="maslan Al-Madina Market"></label>
-    <label class="f">Malik ka naam<input id="s_owner" value="${esc(draft?draft.ownerName:settings.ownerName)}"></label>
-    <label class="f">Rabta number<input id="s_phone" value="${esc(draft?draft.phone:settings.phone)}"></label>
-    <label class="f">Pata<input id="s_addr" value="${esc(draft?draft.address:settings.address)}" placeholder="maslan G-9 Markaz, Islamabad"></label></div>
-    <h3 style="margin-top:6px">Payment methods (kiraya kahan jama ho)</h3>
-    <p class="muted" style="margin:0;font-size:13.5px">Bank account, JazzCash ya Easypaisa number daalein. Yeh karayadar ke page aur invoice par aayenge, aur payment jama karte waqt "Tareeqa" mein bhi.</p>
-    <div class="grid" style="gap:10px">${list.map((p,i)=>`<div class="pm-row">
-      <label class="f">Naam<input data-pm="${i}" data-k="title" value="${esc(p.title)}" placeholder="maslan Meezan Bank / JazzCash"></label>
-      <label class="f">Account / number<input data-pm="${i}" data-k="number" value="${esc(p.number)}" placeholder="maslan 0300-1234567 ya IBAN"></label>
-      <label class="f">Account holder<input data-pm="${i}" data-k="holder" value="${esc(p.holder)}" placeholder="maslan Ahmed Khan"></label>
-      <button class="btn danger" type="button" data-pmdel="${i}">Hatayein</button></div>`).join('')||'<p class="muted" style="margin:0">Abhi koi payment method nahi. Neeche button se add karein.</p>'}</div>
-    <div class="row"><button class="btn" type="button" id="pmAdd">+ Payment method</button></div>
-    <div class="row"><button class="btn pri" type="submit">Sab save karein</button></div></form>`;
-  app.querySelectorAll('[data-pm]').forEach(inp=>inp.oninput=()=>{list[+inp.dataset.pm][inp.dataset.k]=inp.value});
-  const keep=()=>{draft={marketName:$('#s_name').value,ownerName:$('#s_owner').value,phone:$('#s_phone').value,address:$('#s_addr').value}};
-  $('#pmAdd').onclick=()=>{keep();list.push({title:'',number:'',holder:''});draw()};
-  app.querySelectorAll('[data-pmdel]').forEach(b=>b.onclick=()=>{keep();list.splice(+b.dataset.pmdel,1);draw()});
-  $('#setForm').onsubmit=async ev=>{ev.preventDefault();const d={marketName:$('#s_name').value.trim(),ownerName:$('#s_owner').value.trim(),phone:$('#s_phone').value.trim(),address:$('#s_addr').value.trim(),
-    payMethods:list.map(p=>({title:(p.title||'').trim(),number:(p.number||'').trim(),holder:(p.holder||'').trim()})).filter(p=>p.title||p.number)};
-    try{await db.doc('meta/settings').set(d);settings=d;applySettings();toast('Settings save ho gayin');renderSettings()}catch(e){toast('Save nahi hua: '+(e.code||e.message))}};
-  };draw();
-}
-
-function renderInvoices(){
-  const m=invMonth||thisMonth();
-  const rows=shops.filter(s=>!s.closed||(s.entries||[]).some(x=>x.month===m)).sort((a,b)=>String(a.shopNo).localeCompare(String(b.shopNo),undefined,{numeric:true})).map(s=>({s,e:(s.entries||[]).find(x=>x.month===m)}));
-  const withE=rows.filter(r=>r.e);let due=0,paid=0;withE.forEach(r=>{const c=entryCalc(r.e);due+=c.due;paid+=c.paid});
-  app.innerHTML=`<div class="spread"><h2>Invoices</h2><label class="f" style="flex-direction:row;align-items:center;gap:8px">Mahina<input id="invM" type="month" value="${esc(m)}" style="width:auto"></label></div>
-  <div class="grid g4">
-    <div class="stat"><span class="lbl">Invoices tayyar</span><b>${withE.length} / ${rows.length}</b></div>
-    <div class="stat"><span class="lbl">Kul banta hai</span><b>${rs(due)}</b></div>
-    <div class="stat"><span class="lbl">Wasool</span><b>${rs(paid)}</b></div>
-    <div class="stat ${due-paid>0?'due':''}"><span class="lbl">Baqi</span><b>${rs(due-paid)}</b></div>
-  </div>
-  ${withE.length&&downloads?`<div class="row"><button class="btn pri" id="allDl">${esc(monthLabel(m))} ki sab invoices download</button><span class="muted" style="font-size:13px">Ek file mein saari invoices, print ke liye.</span></div>`:''}
-  ${!rows.length?`<div class="panel empty"><h3>Abhi koi dukaan nahi</h3><p>Pehle "Nayi Dukaan" se market ki dukanein add karein.</p></div>`:
-  `<div class="tbl-wrap"><table><thead><tr><th>Dukaan #</th><th>Karayadar</th><th>Invoice #</th><th class="num">Kul</th><th class="num">Jama</th><th class="num">Baqi</th><th>Halat</th><th></th></tr></thead><tbody>
-  ${rows.map(({s,e})=>{if(!e)return `<tr><td><b>${esc(s.shopNo)}</b></td><td>${esc(s.tenant)}</td><td class="muted">—</td><td></td><td></td><td></td><td><span class="pill due">Bill nahi likha</span></td><td><button class="btn sm" data-open="${esc(s.code)}">Bill likhein</button></td></tr>`;
-    const c=entryCalc(e),st=status(e);return `<tr><td><b>${esc(s.shopNo)}</b></td><td>${esc(s.tenant)}</td><td><span class="code">${esc(invNo(s,e))}</span></td><td class="num">${rs(c.due)}</td><td class="num">${rs(c.paid)}</td><td class="num">${rs(Math.max(c.bal,0))}</td><td><span class="pill ${st[0]}">${st[1]}</span></td><td><button class="btn sm pri" data-inv="${esc(s.code)}">Invoice</button></td></tr>`}).join('')}
-  </tbody></table></div>`}`;
-  $('#invM').onchange=ev=>{invMonth=ev.target.value||thisMonth();renderInvoices()};
-  app.querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>{const s=shops.find(x=>x.code===b.dataset.inv);openInvoice(s,s.entries.find(e=>e.month===m))});
-  app.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{view.tab='shops';view.shop=b.dataset.open;render()});
-  const ad=$('#allDl');if(ad)ad.onclick=async()=>{const body=withE.map(r=>invoiceBody(r.s,r.e)).join('<div style="page-break-after:always;height:28px"></div>');
-    try{await downloads.save({filename:'Invoices-'+m+'.html',data:new Blob([invoiceFile(null,null,body,'Invoices '+monthLabel(m))],{type:'text/html'})});toast('Invoices save ho gayin')}catch(er){if(er&&er.code!=='declined')toast('Download nahi hua')}};
-}
-
-/* ---------- karayadar ---------- */
-function savedCode(){try{return localStorage.getItem('mkk-code')||''}catch(_){return''}}
-function renderTenant(){
-  if(!tenantShop){
-    const pre=(location.hash.slice(1).match(/^MK-[A-Z0-9]{6}$/i)||[])[0]||savedCode();
-    app.innerHTML=`<div class="lookup">
-      <h2>Apna kiraya dekhein</h2>
-      <p class="muted" style="margin:0">Malik ka diya hua dukaan code aur 4 hindson ka PIN daalein.</p>
-      <form id="lk" style="flex-direction:column">
-        <label class="f" style="text-align:left">Dukaan code<input id="lkCode" autocomplete="off" placeholder="MK-XXXXXX" value="${esc(pre)}" required></label>
-        <label class="f" style="text-align:left">PIN<input id="lkPin" type="password" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="••••" required></label>
-        <button class="btn pri" type="submit" id="lkBtn" style="justify-content:center">Apna record kholein</button></form>
-      ${tenantErr?`<div class="msg err">${esc(tenantErr)}</div>`:''}
-    </div>`;
-    $('#lk').onsubmit=ev=>{ev.preventDefault();lookup($('#lkCode').value,$('#lkPin').value)};return;
-  }
-  const s=tenantShop;const t=shopTotals(s);const entries=sortE(s);
-  const curBal=Math.max(t.bal,0);
-  app.innerHTML=`
-  <button class="back" id="tOut">← Bahar niklein</button>
-  ${s.closed?`<div class="msg err">Yeh dukaan ${esc(s.closedAt||'')} ko chhor di gayi. Aap ka poora record yahan mehfooz hai.</div>`:''}
-  <div class="spread"><div><span class="lbl">${esc(settings.marketName||'Market')} · Dukaan ${esc(s.shopNo)}</span><h2>${esc(s.tenant)}</h2></div><span class="code big">${esc(s.code)}</span></div>
-  <div class="grid g4">
-    <div class="stat"><span class="lbl">Mahana kiraya</span><b>${rs(s.monthlyRent)}</b></div>
-    <div class="stat"><span class="lbl">Kul banta hai</span><b>${rs(t.due)}</b></div>
-    <div class="stat"><span class="lbl">Aap ne jama kiya</span><b>${rs(t.paid)}</b></div>
-    <div class="stat ${t.bal>0?'due':''}"><span class="lbl">Baqaya</span><b>${rs(t.bal)}</b></div>
-  </div>
-  <div class="panel grid" style="gap:12px"><h3>Kiraya jama karwayein</h3>
-    ${pms().length?`<p class="muted" style="margin:0">Neeche diye gaye kisi bhi account mein ${curBal?'<b>'+rs(curBal)+'</b>':'kiraya'} bhejein.</p>${payHTML()}`:`<p class="muted" style="margin:0">Kiraya malik ko cash ya unke bataye account mein jama karwayein.</p>`}
-    <form id="tPay" class="grid g2" style="gap:10px">
-      <label class="f">Raqam (Rs.)<input id="tp_amt" type="number" min="1" value="${curBal||''}"></label>
-      <label class="f">Tareeqa<select id="tp_method">${methodOptions().map(m=>`<option>${esc(m)}</option>`).join('')}</select></label>
-      <label class="f">Transaction ID<input id="tp_ref" placeholder="Payment ke baad milne wala TID"></label>
-      <div style="display:flex;align-items:end"><button class="btn pri" type="submit" style="width:100%;justify-content:center">Malik ke liye message copy karein</button></div>
-    </form>
-    <p class="muted" style="margin:0;font-size:13px">Payment bhejne ke baad yeh message WhatsApp par malik ko bhejein${settings.phone?' (<b style="user-select:all">'+esc(settings.phone)+'</b>)':''}. Malik ke tasdeeq karte hi payment aap ke record mein aa jayegi.</p>
-  </div>
-  <div class="panel"><h3 style="margin-bottom:12px">Aap ki dukaan ki detail</h3>
-    <div class="kv">
-      <div><span class="lbl">Dukaan #</span><span>${esc(s.shopNo)}</span></div>
-      <div><span class="lbl">Karayadar</span><span>${esc(s.tenant)}</span></div>
-      <div><span class="lbl">Mobile</span><span>${esc(s.phone||'—')}</span></div>
-      <div><span class="lbl">CNIC</span><span>${esc(s.cnic||'—')}</span></div>
-      <div><span class="lbl">Karobar</span><span>${esc(s.business||'—')}</span></div>
-      <div><span class="lbl">Kiraya shuru tareekh</span><span>${esc(s.startDate||'—')}</span></div>
-      <div><span class="lbl">Security / advance</span><span>${rs(s.security||0)}</span></div>
-      <div><span class="lbl">Note</span><span>${esc(s.note||'—')}</span></div>
+    <div class="rc-body">
+      <div class="rc-wm ${isR?"":"due"}">${isR?"PAID":"DUE"}</div>
+      <div class="rc-amt">
+        <div><small>${isR?"Wasool shuda raqam":"Qabil-e-ada raqam"}</small><b>${fmt(amt)}</b><div class="rc-words">${esc(words(amt))} Rupees Only</div></div>
+        <div class="rc-stamp ${isR?"":"due"}">${isR?"PAID":"UNPAID"}<small>${isR?esc(when(pay.paidAt)):"Akhri tareekh 5 "+esc(mLabel(month))}</small></div>
+      </div>
+      <div class="rc-grid">
+        <div><small>${isR?"Wasool kiya (kirayedar)":"Bill to (kirayedar)"}</small><b>${esc(shop.tenant||"Kirayedar")}</b></div>
+        <div><small>Dukan code</small><b>${esc(shop.code)}</b></div>
+        <div><small>Kiraye ka mahina</small><b>${esc(mLong(month))}</b></div>
+        <div><small>${isR?"Paid date & time":"Jari tareekh"}</small><b>${esc(issued)}</b></div>
+        ${isR?`<div><small>Payment method</small><b>${esc(pay.method)}</b></div><div><small>Invoice ref.</small><b>${esc(invNo(shop,month))}</b></div>`
+          :`<div><small>Phone</small><b>${esc(shop.phone||"—")}</b></div><div><small>Akhri tareekh</small><b>5 ${esc(mLabel(month))}</b></div>`}
+      </div>
+      <table><thead><tr><th>#</th><th>Tafseel</th><th class="r">Raqam</th></tr></thead><tbody>
+        <tr><td>1</td><td>Dukan ${esc(shop.code)} ka mahana kiraya · ${esc(mLong(month))}</td><td class="r">${fmt(amt)}</td></tr>
+        <tr class="tot"><td></td><td>${isR?"Kul wasool":"Kul qabil-e-ada"}</td><td class="r">${fmt(amt)}</td></tr>
+      </tbody></table>
+      ${isR?"":`${methodsHTML(S,true)}${S.note?`<p style="font-size:.85rem;color:#5b6f6a;margin:0">${esc(S.note)}</p>`:""}`}
+      <div class="rc-foot">
+        <div class="rc-codes">
+          <div><div class="rc-qr" data-qr="${esc(qr)}"></div><div class="rc-cap">Scan to verify</div></div>
+          <div><div class="rc-bc"><svg data-bc="${esc(no)}"></svg></div></div>
+        </div>
+        <div class="rc-sign"><div>${esc(S.owner||"Landlord")} · Dastakhat</div></div>
+      </div>
     </div>
-  </div>
-  <div class="spread"><h3>Poori umar ka kiraya record</h3><span class="muted">${entries.length} mahine</span></div>
-  ${entries.length?entryTable(s,entries,false):`<div class="panel empty"><h3>Abhi koi kiraya record nahi</h3><p>Jab malik mahine ka bill likhega, yahan nazar aayega.</p></div>`}`;
-  $('#tOut').onclick=()=>{tenantShop=null;tenantErr='';tenantCred=null;if(tenantUnsub){tenantUnsub();tenantUnsub=null}renderTenant()};
-  $('#tPay').onsubmit=ev=>{ev.preventDefault();const a=+$('#tp_amt').value||0;
-    copy(`Assalam o Alaikum,\nMain ne kiraya jama karwa diya hai.\nDukaan: ${s.shopNo} (Code ${s.code})\nNaam: ${s.tenant}\nRaqam: ${rs(a)}\nTareeqa: ${$('#tp_method').value}\nTransaction ID: ${$('#tp_ref').value.trim()||'—'}\nTareekh: ${today()}\nMeherbani karke record mein likh dein.`)};
-  bindEntryTable(s);
-}
-async function lookup(rawCode,rawPin){
-  let c=norm(rawCode);if(c&&!c.startsWith('MK-'))c='MK-'+c.replace(/^MK/,'');
-  const pin=String(rawPin||'').trim();
-  if(!/^MK-[A-Z0-9]{6}$/.test(c)){tenantErr='Code sahi nahi. Code is tarah hota hai: MK- aur 6 huroof/number.';renderTenant();return}
-  if(!/^\d{4}$/.test(pin)){tenantErr='PIN 4 hindson ka hota hai.';renderTenant();return}
-  const btn=$('#lkBtn');if(btn){btn.disabled=true;btn.textContent='Khul raha hai…'}
-  try{const id=await portalId(c,pin);const ref=db.doc('portal/'+id);const snap=await ref.get();
-    if(!snap.exists){tenantErr='Code ya PIN ghalat hai. Malik se confirm karein.';renderTenant();return}
-    tenantShop=await openPortal(snap.data(),c,pin);tenantCred={c,pin};tenantErr='';try{localStorage.setItem('mkk-code',c)}catch(_){}
-    renderTenant();
-    if(tenantUnsub)tenantUnsub();
-    tenantUnsub=ref.onSnapshot(async sn=>{if(sn.exists&&tenantCred){try{const d=await openPortal(sn.data(),c,pin);if(JSON.stringify(d)!==JSON.stringify(tenantShop)){tenantShop=d;const a=document.activeElement;if(!(a&&a.matches&&a.matches('input,select')))renderTenant()}}catch(_){}}},()=>{});
-  }catch(e){tenantErr='Abhi record nahi khula. Thori dair baad koshish karein.';renderTenant()}
-}
-
-/* ---------- invoice ---------- */
-function invoiceBody(s,e){
-  const c=entryCalc(e);const st=status(e);const ps=payList(e).filter(p=>!p.void);
-  const col=st[0]==='paid'?'#1F7A3F':st[0]==='part'?'#8A5A00':'#B3261E';
-  return `<div class="inv">
-   <div class="ih"><div><h4>${esc(settings.marketName||'Market')}</h4><div style="font-size:13px;color:#5b6b63">${esc(settings.address||'')}${settings.phone?'<br>Rabta: '+esc(settings.phone):''}${settings.ownerName?'<br>Malik: '+esc(settings.ownerName):''}</div></div>
-   <div><div class="t">Kiraya Invoice</div><div style="font-family:var(--f-mono);font-weight:700;text-align:right">${esc(invNo(s,e))}</div><div style="font-size:13px;color:#5b6b63;text-align:right">Tareekh: ${esc(today())}</div></div></div>
-   <div class="meta">
-    <div><b>Karayadar</b>${esc(s.tenant)}</div><div><b>Dukaan #</b>${esc(s.shopNo)}</div>
-    <div><b>Karayadar code</b><span style="font-family:var(--f-mono);font-weight:700">${esc(s.code)}</span></div><div><b>Mahina</b>${esc(monthLabel(e.month))}</div>
-    ${s.phone?`<div><b>Mobile</b>${esc(s.phone)}</div>`:''}
-   </div>
-   <table><thead><tr><th>Tafseel</th><th class="num">Raqam</th></tr></thead><tbody>
-    <tr><td>Kiraya — ${esc(monthLabel(e.month))}</td><td class="num">${rs(e.rent)}</td></tr>
-    ${(+e.extra)?`<tr><td>${esc(e.extraNote||'Deegar charges')}</td><td class="num">${rs(e.extra)}</td></tr>`:''}
-    <tr><td><b>Kul raqam</b></td><td class="num"><b>${rs(c.due)}</b></td></tr>
-    ${(+e.paid)?`<tr><td>Jama (pehle se likha)</td><td class="num">− ${rs(e.paid)}</td></tr>`:''}
-    ${ps.map(p=>`<tr><td>Jama ${esc(p.date)} · ${esc(p.method)}${p.ref?' · TID '+esc(p.ref):''}</td><td class="num">− ${rs(p.amount)}</td></tr>`).join('')}
-    <tr class="tot"><td>Baqi</td><td class="num">${rs(Math.max(c.bal,0))}</td></tr>
-   </tbody></table>
-   ${e.note?`<p style="font-size:13px;color:#5b6b63;margin:12px 0 0">Note: ${esc(e.note)}</p>`:''}
-   ${pms().length?`<div style="margin-top:14px;font-size:13px"><b style="display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#5b6b63;margin-bottom:4px">Payment methods</b>${pms().map(p=>`<div>${esc(p.title)}: <b style="font-family:var(--f-mono)">${esc(p.number)}</b>${p.holder?' ('+esc(p.holder)+')':''}</div>`).join('')}</div>`:''}
-   <div class="stamp" style="color:${col}">${st[0]==='paid'?'ADA SHUDA':st[0]==='part'?'JUZVI ADA':'BAQAYA'}</div>
+    <div class="rc-note">${isR?"Ye computer se bani hui raseed hai. Serial number aur QR code se tasdeeq ki ja sakti hai.":"Kiraya ada karne ke baad landlord tick lagayega aur serial number wali raseed ban jayegi."}</div>
   </div>`;
 }
-function invoiceFile(s,e,bodyHtml,ttl){
-  const st=document.querySelector('style');const css=st?(st.textContent.match(/\.inv[^{]*\{[^}]*\}/g)||[]).join('\n'):'';
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(ttl||invNo(s,e))}</title>
-<style>:root{--f-display:Georgia,serif;--f-body:system-ui,sans-serif;--f-mono:ui-monospace,monospace}body{margin:0;padding:24px;background:#fff;font-family:system-ui,sans-serif}table{border-collapse:collapse;width:100%}th,td{text-align:left}.num{text-align:right}${css}@media print{body{padding:0}}</style></head><body>${bodyHtml||invoiceBody(s,e)}<p style="font-size:12px;color:#777;margin-top:18px">Print karne ke liye Ctrl+P dabayein.</p></body></html>`;
+function renderCodes(root){
+  root.querySelectorAll("[data-qr]").forEach(el=>{
+    if(!window.QRCode){el.outerHTML="";return}
+    try{const tmp=document.createElement("div");new QRCode(tmp,{text:el.dataset.qr,width:200,height:200,colorDark:"#16302b",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});
+      const c=tmp.querySelector("canvas");const src=c?c.toDataURL("image/png"):(tmp.querySelector("img")||{}).src;
+      el.innerHTML=src?`<img alt="QR code" src="${src}">`:"";}catch(e){el.innerHTML=""}
+  });
+  root.querySelectorAll("svg[data-bc]").forEach(svg=>{
+    if(!window.JsBarcode){svg.remove();return}
+    try{JsBarcode(svg,svg.dataset.bc,{format:"CODE128",height:46,width:1.6,displayValue:true,fontSize:13,margin:0,background:"#ffffff",lineColor:"#16302b",font:"monospace"})}catch(e){svg.remove()}
+  });
 }
-function openInvoice(s,e){
-  if(!s||!e)return;
-  const bg=document.createElement('div');bg.className='modal-bg';
-  bg.innerHTML=`<div class="modal" role="dialog" aria-label="Invoice"><div class="spread"><h3>Invoice</h3><button class="btn sm" id="mClose">Band karein</button></div>
-   ${invoiceBody(s,e)}
-   <div class="row">${downloads?'<button class="btn pri" id="mDl">Invoice download karein</button>':''}<button class="btn" id="mCp">Text copy (WhatsApp)</button></div><div id="mMsg"></div></div>`;
-  document.body.appendChild(bg);
-  const close=()=>bg.remove();bg.onclick=ev=>{if(ev.target===bg)close()};$('#mClose').onclick=close;
-  const c=entryCalc(e);
-  $('#mCp').onclick=()=>copy(`*${settings.marketName||'Market'}* — Kiraya Invoice\n${invNo(s,e)}\nKarayadar: ${s.tenant}\nDukaan: ${s.shopNo} (Code ${s.code})\nMahina: ${monthLabel(e.month)}\nKiraya: ${rs(e.rent)}${(+e.extra)?`\n${e.extraNote||'Deegar'}: ${rs(e.extra)}`:''}\nKul: ${rs(c.due)}\nJama: ${rs(c.paid)}\nBaqi: ${rs(Math.max(c.bal,0))}${pms().length?'\n\nPayment:\n'+pms().map(p=>`${p.title}: ${p.number}`).join('\n'):''}`);
-  const dl=$('#mDl');if(dl)dl.onclick=async()=>{try{await downloads.save({filename:invNo(s,e)+'.html',data:new Blob([invoiceFile(s,e)],{type:'text/html'})});$('#mMsg').innerHTML='<div class="msg ok">Invoice save ho gayi. Kholein aur print karein.</div>'}catch(er){if(er&&er.code!=='declined')$('#mMsg').innerHTML='<div class="msg err">Download nahi hua. "Text copy" use karein.</div>'}};
+function docText(kind,S,shop,month,pay){
+  const isR=kind==="receipt";
+  let t=`*${S.market}*\n${isR?"RENT RECEIPT":"RENT INVOICE"}\n${isR?"Serial":"No."}: ${isR?serialOf(pay):invNo(shop,month)}\nDukan: ${shop.code}${shop.tenant?" ("+shop.tenant+")":""}\nMahina: ${mLong(month)}\n`;
+  if(isR)t+=`Raqam: ${fmt(pay.amount)} (${words(pay.amount)} Rupees Only)\nTareeqa: ${pay.method}\nPaid: ${when(pay.paidAt)}\nStatus: PAID ✅`;
+  else{t+=`Kiraya: ${fmt(shop.rent)}\nAkhri tareekh: 5 ${mLabel(month)}\n`;
+    if(S.jn)t+=`JazzCash: ${S.jn} (${S.jt})\n`;if(S.en)t+=`Easypaisa: ${S.en} (${S.et})\n`;if(S.bi)t+=`${S.bn||"Bank"}: ${S.bi} (${S.bt})\n`;if(S.note)t+=S.note}
+  return t;
+}
+function showDoc(kind,S,shop,month,pay){
+  docCur={kind,S,shop,month,pay};$("docPaper").innerHTML=docHTML(kind,S,shop,month,pay);renderCodes($("docPaper"));$("docMsg").textContent="";
+  $("docDl").hidden=!DL;$("docSheet").hidden=false;$("docClose").focus();
+}
+$("docClose").onclick=()=>{$("docSheet").hidden=true};
+$("docCopy").onclick=()=>{const t=docText(docCur.kind,docCur.S,docCur.shop,docCur.month,docCur.pay);
+  navigator.clipboard.writeText(t).then(()=>{$("docMsg").textContent="Copy ho gaya. WhatsApp mein paste karein."},()=>{$("docMsg").textContent="Copy nahi ho saka. Raseed ka text khud select kar ke copy karein."})};
+$("docDl").onclick=async()=>{if(!DL)return;const c=docCur;const name=(c.kind==="receipt"?serialOf(c.pay):invNo(c.shop,c.month))+".html";
+  const html=`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(name)}</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Figtree:wght@400;600;700&display=swap"><style>body{margin:0;padding:24px 12px;background:#eef2f1}${RCSS}@media print{body{background:#fff;padding:0}.rc{border:0}}</style></head><body>${$("docPaper").innerHTML}</body></html>`;
+  try{await DL.save({filename:name,data:new Blob([html],{type:"text/html"})});$("docMsg").textContent="Download ho gaya. File khol kar print ya PDF bana sakte hain."}catch(e){$("docMsg").textContent=e?.code==="declined"?"Download cancel ho gaya.":"Download nahi ho saka. WhatsApp copy istemal karein."}};
+document.addEventListener("click",e=>{const b=e.target.closest("[data-copyid]");if(!b)return;const el=$(b.dataset.copyid);
+  navigator.clipboard.writeText(el.textContent).then(()=>{b.textContent="Copied"},()=>{const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r)})});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("docSheet").hidden)$("docSheet").hidden=true;else if(!$("shopSheet").hidden)closeShop()}});
+
+/* ---------- SHOPKEEPER ---------- */
+let LED=null;
+$("loginForm").onsubmit=async e=>{
+  e.preventDefault();const code=norm($("lCode").value),pin=$("lPin").value.trim();$("lErr").textContent="";
+  if(!code||!/^\d{6}$/.test(pin)){$("lErr").textContent="Shop Code aur 6 hindson ka PIN likhein.";return}
+  if(!DB){$("lErr").textContent="Website se connect nahi ho saka. Page sign in kar ke kholein.";return}
+  $("lBtn").disabled=true;$("lBtn").textContent="Check ho raha hai…";
+  try{const snap=await DB.doc("box/"+await boxId(code,pin)).get();if(!snap.exists)throw 0;LED=await unseal(code,pin,snap.data());showLedger()}
+  catch(err){$("lErr").textContent="Shop Code ya PIN ghalat hai. Dobara likhein ya landlord se poochein."}
+  $("lBtn").disabled=false;$("lBtn").textContent="Login karein";
+};
+function showLedger(){
+  const L=LED,S={...DEFAULT_SET,...(L.settings||{})};$("loginBox").hidden=true;const el=$("ledger");el.hidden=false;
+  const pays=L.payments||[];const by={};pays.forEach(p=>by[p.month]=p);
+  const ms=monthsFrom(L.start).filter(m=>m<=curKey||by[m]).reverse();
+  const total=pays.reduce((n,p)=>n+p.amount,0),unpaid=ms.filter(m=>!by[m]);
+  const shop={code:L.code,tenant:L.tenant,phone:L.phone,rent:L.rent};
+  el.innerHTML=`<div class="head"><div><span class="eyebrow">Dukan ${esc(L.code)} · ${esc(S.market)}</span><h2>${esc(L.tenant||"Kirayedar")}</h2><p class="note">Mahana kiraya ${fmt(L.rent)}${L.deposit?" · Security deposit "+fmt(L.deposit):""}${L.agreeEnd?" · Agreement "+esc(L.agreeEnd)+" tak":""}</p></div>
+    <button class="btn btn-ghost" id="logout">Logout</button></div>
+    <div class="stats"><div class="stat"><b>${fmt(total)}</b><span>Kul jama kiraya</span></div>
+      <div class="stat"><b>${by[curKey]?"Paid":"Baqi"}</b><span>${mLabel(curKey)}</span></div>
+      <div class="stat"><b>${unpaid.length?fmt(unpaid.length*L.rent):"Rs 0"}</b><span>Baqi raqam (${unpaid.length} mahine)</span></div></div>
+    ${methodsHTML(S,false)?`<h3 style="font-size:1.15rem;margin-bottom:10px">Online kiraya bhejein</h3><div class="methods" style="margin-bottom:8px">${methodsHTML(S,false)}</div>
+      <p class="note" style="margin-bottom:22px">${esc(S.note||"Paise bhejne ke baad landlord ko batayein. Wo tick lagayega to yahan Paid aur raseed aa jayegi.")}</p>`:""}
+    <h3 style="font-size:1.15rem;margin-bottom:10px">Mahina wise hisaab</h3>
+    <div class="months">${ms.map(m=>{const p=by[m];return `<div class="mon ${p?"paid":""}"><div class="top"><b>${mLabel(m)}</b><span class="pill ${p?"ok":"bad"}">${p?"Paid":"Baqi"}</span></div>
+      <span class="num">${fmt(p?p.amount:L.rent)}</span>${p?`<span class="when">${esc(when(p.paidAt))}</span>`:""}
+      <div class="acts">${p?`<button class="mini go" data-sdoc="receipt" data-m="${m}">Raseed</button>`:`<button class="mini" data-sdoc="invoice" data-m="${m}">Invoice</button>`}</div></div>`}).join("")}</div>`;
+  $("logout").onclick=()=>{LED=null;el.hidden=true;el.innerHTML="";$("loginBox").hidden=false;$("lPin").value=""};
+  el.querySelectorAll("[data-sdoc]").forEach(b=>b.onclick=()=>showDoc(b.dataset.sdoc,S,shop,b.dataset.m,by[b.dataset.m]));
 }
 
-/* ---------- raseed (receipt) ---------- */
-const ONES=['','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
-const TENS=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
-function w99(n){return n<20?ONES[n]:TENS[Math.floor(n/10)]+(n%10?'-'+ONES[n%10]:'')}
-function w999(n){return(n>=100?ONES[Math.floor(n/100)]+' hundred'+(n%100?' ':''):'')+(n%100?w99(n%100):'')}
-function inWords(n){n=Math.round(+n||0);if(!n)return 'Zero';const parts=[];const units=[[10000000,'crore'],[100000,'lakh'],[1000,'thousand']];
-  for(const[v,l]of units){if(n>=v){parts.push(w999(Math.floor(n/v))+' '+l);n%=v}}if(n)parts.push(w999(n));const t=parts.join(' ');return t[0].toUpperCase()+t.slice(1)+' rupees only'}
-function rcpNo(s,p){return 'RCP-'+s.code.replace('MK-','')+'-'+String(p.id).slice(-5).toUpperCase()}
-function balAfter(e,p){const due=(+e.rent||0)+(+e.extra||0);let paid=+e.paid||0;for(const x of payList(e)){paid+=(+x.amount||0);if(x.id===p.id)break}return Math.max(due-paid,0)}
-function receiptBody(s,e,p){
-  const left=balAfter(e,p);
-  return `<div class="inv">
-   <div class="ih"><div><h4>${esc(settings.marketName||'Market')}</h4><div style="font-size:13px;color:#5b6b63">${esc(settings.address||'')}${settings.phone?'<br>Rabta: '+esc(settings.phone):''}</div></div>
-   <div><div class="t">Payment Raseed</div><div style="font-family:var(--f-mono);font-weight:700;text-align:right">${esc(rcpNo(s,p))}</div><div style="font-size:13px;color:#5b6b63;text-align:right">Tareekh: ${esc(p.date)}</div></div></div>
-   <p style="margin:16px 0 0;font-size:15px;line-height:1.7">Wasool kiye <b>${esc(s.tenant)}</b> se, Dukaan # <b>${esc(s.shopNo)}</b> (code <span style="font-family:var(--f-mono);font-weight:700">${esc(s.code)}</span>), <b>${esc(monthLabel(e.month))}</b> ke kiraye ki mad mein.</p>
-   <div style="margin-top:14px;border:2px solid #0D6B4E;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-     <div><b style="display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#5b6b63">Raqam</b><span style="font-family:var(--f-display);font-size:28px;font-weight:700;color:#0D6B4E">${rs(p.amount)}</span></div>
-     <div style="font-size:13px;color:#5b6b63;max-width:300px">${esc(inWords(p.amount))}</div></div>
-   <div class="meta">
-    <div><b>Tareeqa</b>${esc(p.method||'—')}</div><div><b>Transaction ID</b>${esc(p.ref||'—')}</div>
-    <div><b>Mahine ka kul bill</b>${rs((+e.rent||0)+(+e.extra||0))}</div><div><b>Is payment ke baad baqi</b>${rs(left)}</div>
-    <div><b>Invoice #</b>${esc(invNo(s,e))}</div>
-   </div>
-   <div style="display:flex;justify-content:space-between;align-items:end;gap:14px;flex-wrap:wrap;margin-top:22px">
-     <div class="stamp" style="color:${left?'#8A5A00':'#1F7A3F'};margin-top:0">${left?'JUZVI WASOOL':'MUKAMMAL WASOOL'}</div>
-     <div style="text-align:center;font-size:12.5px;color:#5b6b63"><div style="border-top:1px solid #16211c;width:170px;padding-top:4px">${esc(settings.ownerName||'Malik')} — dastakhat</div></div></div>
-  </div>`;
+/* ---------- LANDLORD ---------- */
+const SETS=()=>({...DEFAULT_SET,...(MAIN.settings||{})});
+const DEFAULT_RENT={"G-01":45000,"G-10":48000,"G-05":32000,"G-06":32000,"F-01":22000,"F-06":16000,"F-07":16000,"F-08":28000};
+$("setupBtn").onclick=async()=>{
+  $("setupBtn").disabled=true;const shops=[];
+  for(let i=1;i<=10;i++){const c="G-"+String(i).padStart(2,"0");shops.push({code:c,tenant:"",phone:"",cnic:"",rent:DEFAULT_RENT[c]||35000,start:"",pin:newPin()})}
+  for(let i=1;i<=8;i++){const c="F-"+String(i).padStart(2,"0");shops.push({code:c,tenant:"",phone:"",cnic:"",rent:DEFAULT_RENT[c]||18000,start:"",pin:newPin()})}
+  MAIN={shops,payments:[],rseq:0,settings:{...DEFAULT_SET}};
+  try{await saveMain(shops.map(s=>s.code));$("setup").hidden=true;$("ll").hidden=false;renderLL()}
+  catch(e){$("setupErr").textContent="Save nahi ho saka. Dobara koshish karein.";$("setupBtn").disabled=false}
+};
+function migrate(){
+  MAIN.settings={...DEFAULT_SET,...(MAIN.settings||{})};
+  MAIN.shops.forEach(s=>{s.start=s.start||"";s.cnic=s.cnic||"";s.deposit=s.deposit||0;s.agreeEnd=s.agreeEnd||""});
+  MAIN.expenses=MAIN.expenses||[];
+  const seen={};MAIN.payments=(MAIN.payments||[]).map(p=>({...p,paidAt:p.paidAt||(p.date?p.date+"T12:00:00":new Date().toISOString())})).filter(p=>{const k=p.shop+"|"+p.month;if(seen[k])return false;seen[k]=1;return true});
 }
-function openModal(title,body,file,fileTitle,copyText){
-  const bg=document.createElement('div');bg.className='modal-bg';
-  bg.innerHTML=`<div class="modal" role="dialog" aria-label="${esc(title)}"><div class="spread"><h3>${esc(title)}</h3><button class="btn sm" data-x>Band karein</button></div>
-   ${body}<div class="row">${downloads?'<button class="btn pri" data-dl>Download karein</button>':''}<button class="btn" data-cp>Text copy (WhatsApp)</button></div><div data-msg></div></div>`;
-  document.body.appendChild(bg);const q=x=>bg.querySelector(x);
-  const close=()=>bg.remove();bg.onclick=ev=>{if(ev.target===bg)close()};q('[data-x]').onclick=close;
-  q('[data-cp]').onclick=()=>copy(copyText);
-  const dl=q('[data-dl]');if(dl)dl.onclick=async()=>{try{await downloads.save({filename:file,data:new Blob([invoiceFile(null,null,body,fileTitle)],{type:'text/html'})});q('[data-msg]').innerHTML='<div class="msg ok">Save ho gayi. Kholein aur print karein.</div>'}catch(er){if(er&&er.code!=='declined')q('[data-msg]').innerHTML='<div class="msg err">Download nahi hua. "Text copy" use karein.</div>'}};
+async function boxFor(s){
+  const pays=MAIN.payments.filter(p=>p.shop===s.code).map(({rno,month,amount,method,paidAt})=>({rno,month,amount,method,paidAt}));
+  return seal(s.code,s.pin,{code:s.code,tenant:s.tenant,phone:s.phone,rent:s.rent,start:s.start,deposit:s.deposit||0,agreeEnd:s.agreeEnd||"",payments:pays,settings:SETS()});
 }
-function openReceipt(s,e,p){if(!s||!e||!p)return;const no=rcpNo(s,p);
-  openModal('Payment Raseed',receiptBody(s,e,p),no+'.html',no,
-  `*${settings.marketName||'Market'}* — Payment Raseed\n${no}\nTareekh: ${p.date}\nKarayadar: ${s.tenant}\nDukaan: ${s.shopNo} (Code ${s.code})\nMahina: ${monthLabel(e.month)}\nWasool raqam: ${rs(p.amount)}\n(${inWords(p.amount)})\nTareeqa: ${p.method}${p.ref?'\nTID: '+p.ref:''}\nBaqi: ${rs(balAfter(e,p))}\nShukriya!`)}
+let saving=Promise.resolve();
+function saveMain(changed,oldBoxes=[]){
+  saving=saving.catch(()=>{}).then(async()=>{
+    $("sSync").textContent="Save ho raha…";
+    await mainRef.set(MAIN);
+    for(const code of changed){const s=MAIN.shops.find(x=>x.code===code);if(!s)continue;await DB.doc("box/"+await boxId(s.code,s.pin)).set(await boxFor(s))}
+    for(const id of oldBoxes){try{await DB.doc("box/"+id).delete()}catch(e){}}
+    $("sSync").textContent="Saved ✓";
+  });
+  saving.catch(()=>{$("sSync").textContent="Save fail, dobara karein"});
+  return saving;
+}
+function renderLL(){
+  $("brandName").textContent=SETS().market;
+  if(!$("mSel").options.length)$("mSel").innerHTML=monthsFrom(addM(curKey,-11)).map(m=>`<option value="${m}" ${m===curKey?"selected":""}>${mLabel(m)}</option>`).join("");
+  const m=$("mSel").value;let got=0,left=0,paid=0,occ=0;
+  const q=($("q").value||"").trim().toLowerCase();
+  $("shopBody").innerHTML=MAIN.shops.map(s=>{
+    const hit=!q||s.code.toLowerCase().includes(q)||(s.tenant||"").toLowerCase().includes(q)||(s.phone||"").includes(q);
+    const p=MAIN.payments.find(x=>x.shop===s.code&&x.month===m);
+    if(p)got+=p.amount;const has=!!s.tenant;if(has){occ++;if(p)paid++;else left+=s.rent}
+    const st=!has?`<span class="pill hold">Khali dukan</span>`:p?`<span class="pill ok">Paid · ${esc(when(p.paidAt))}</span>`:`<span class="pill bad">Baqi</span>`;
+    if(!hit)return "";
+    return `<tr><td class="code">${s.code}</td><td>${has?esc(s.tenant)+(s.phone?`<br><span class="note">${esc(s.phone)}</span>`:""):'<span class="note">Koi nahi</span>'}</td>
+      <td class="num">${fmt(s.rent)}</td><td>${st}</td><td class="pinbox num">${s.pin}</td>
+      <td><button class="mini ${has?"go":""}" data-open="${s.code}">${has?"Kholein":"+ Dukandar add karein"}</button></td></tr>`}).join("");
+  if(!$("shopBody").innerHTML.trim())$("shopBody").innerHTML=`<tr><td colspan="6" class="note">"${esc(q)}" se koi dukan nahi mili.</td></tr>`;
+  const exp=expOf(m);
+  $("sGot").textContent=fmt(got);$("sLeft").textContent=fmt(left);$("sPaid").textContent=paid+" / "+occ;
+  $("sExp").textContent=fmt(exp);$("sNet").textContent=fmt(got-exp);
+  document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openShopSheet(b.dataset.open));
+  renderDash();
+}
+$("mSel").onchange=renderLL;$("q").oninput=renderLL;
 
-/* ---------- boot ---------- */
-document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{view.tab=b.dataset.tab;if(b.dataset.tab!=='shops')view.shop=null;render()});
+/* ---- extras: dues, chart, alerts, reminders ---- */
+const shopPays=code=>{const by={};MAIN.payments.filter(p=>p.shop===code).forEach(p=>by[p.month]=p);return by};
+function duesOf(s){if(!s.tenant)return [];const by=shopPays(s.code);return monthsFrom(s.start).filter(mm=>mm<=curKey&&!by[mm])}
+const expOf=m=>(MAIN.expenses||[]).filter(x=>x.date.slice(0,7)===m).reduce((n,x)=>n+x.amount,0);
+const gotOf=m=>MAIN.payments.filter(p=>p.month===m&&!p.shop.includes("~old~")).reduce((n,p)=>n+p.amount,0);
+const daysTo=d=>Math.ceil((new Date(d+"T00:00:00")-new Date(new Date().toDateString()))/864e5);
+function reminderText(s){const S=SETS(),d=duesOf(s);
+  let t=`Assalam o Alaikum ${s.tenant} sahib,\n${S.market} ki dukan ${s.code} ka kiraya baqi hai:\n${d.map(mm=>"• "+mLong(mm)+": "+fmt(s.rent)).join("\n")}\nKul baqi: ${fmt(d.length*s.rent)}\n`;
+  if(S.jn)t+=`JazzCash: ${S.jn} (${S.jt})\n`;if(S.en)t+=`Easypaisa: ${S.en} (${S.et})\n`;if(S.bi)t+=`${S.bn||"Bank"}: ${S.bi} (${S.bt})\n`;
+  t+=`Apna hisaab dekhne ke liye Shop Code ${s.code} aur apna PIN istemal karein.\nShukriya${S.owner?", "+S.owner:""}`;return t}
+function renderDash(){
+  const ms=[];for(let i=-11;i<=0;i++)ms.push(addM(curKey,i));
+  const vals=ms.map(gotOf),max=Math.max(1,...vals),k=v=>v>=1e5?(v/1e5).toFixed(1)+"L":v>=1e3?Math.round(v/1e3)+"k":String(v);
+  $("chart").innerHTML=ms.map((mm,i)=>`<div class="col ${mm===curKey?"cur":""}" title="${mLabel(mm)}: ${fmt(vals[i])}"><span class="v">${vals[i]?k(vals[i]):""}</span><div class="barv" style="height:${Math.round(vals[i]/max*130)}px"></div></div>`).join("");
+  $("chartX").innerHTML=ms.map(mm=>`<span>${MN[+mm.slice(5)-1]}</span>`).join("");
+  $("yTot").textContent="Kul "+fmt(vals.reduce((a,b)=>a+b,0));
+  const al=[];
+  MAIN.shops.forEach(s=>{const d=duesOf(s);if(d.length)al.push({w:d.length*10,html:`<div class="alert"><div><b class="code">${s.code}</b> · ${esc(s.tenant)}<br><span class="note">${d.length} mahine baqi · ${fmt(d.length*s.rent)}</span></div><div class="acts" style="display:flex;gap:6px"><button class="mini" data-remind="${s.code}">Reminder copy</button><button class="mini go" data-open2="${s.code}">Kholein</button></div></div>`});
+    if(s.tenant&&s.agreeEnd){const dd=daysTo(s.agreeEnd);if(dd<=30)al.push({w:dd<0?9:5,html:`<div class="alert warn"><div><b class="code">${s.code}</b> · ${esc(s.tenant)}<br><span class="note">Agreement ${dd<0?"khatam ho chuka ("+esc(s.agreeEnd)+")":dd+" din mein khatam ("+esc(s.agreeEnd)+")"}</span></div><button class="mini" data-open2="${s.code}">Kholein</button></div>`})}});
+  al.sort((a,b)=>b.w-a.w);
+  $("alerts").innerHTML=al.length?al.map(a=>a.html).join(""):`<p class="note">Sab theek hai. Koi kiraya baqi nahi aur koi agreement khatam hone wala nahi.</p>`;
+  $("alerts").querySelectorAll("[data-open2]").forEach(b=>b.onclick=()=>openShopSheet(b.dataset.open2));
+  $("alerts").querySelectorAll("[data-remind]").forEach(b=>b.onclick=()=>{const s=MAIN.shops.find(x=>x.code===b.dataset.remind);
+    navigator.clipboard.writeText(reminderText(s)).then(()=>{b.textContent="Copied ✓"},()=>{b.textContent="Copy nahi hua"})});
+}
+
+/* ---- expenses ---- */
+function renderExp(){
+  if(!$("eMonth").options.length){$("eMonth").innerHTML=monthsFrom(addM(curKey,-11)).map(m=>`<option value="${m}" ${m===curKey?"selected":""}>${mLabel(m)}</option>`).join("");$("xDate").value=new Date().toISOString().slice(0,10)}
+  const m=$("eMonth").value,list=(MAIN.expenses||[]).filter(x=>x.date.slice(0,7)===m).sort((a,b)=>b.date.localeCompare(a.date));
+  $("expBody").innerHTML=list.length?list.map(x=>`<tr><td class="num">${esc(x.date)}</td><td>${esc(x.cat)}</td><td>${esc(x.note)}</td><td class="num">${fmt(x.amount)}</td><td><button class="mini del" data-xdel="${esc(x.id)}">Delete</button></td></tr>`).join("")
+    +`<tr><td colspan="3"><b>Kul kharcha</b></td><td class="num"><b>${fmt(expOf(m))}</b></td><td></td></tr>`
+    :`<tr><td colspan="5" class="note">${mLabel(m)} mein koi kharcha darj nahi. Form se pehla kharcha darj karein.</td></tr>`;
+  $("expBody").querySelectorAll("[data-xdel]").forEach(b=>b.onclick=async()=>{if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Pakka?";return}
+    MAIN.expenses=MAIN.expenses.filter(x=>x.id!==b.dataset.xdel);renderExp();try{await saveMain([])}catch(e){}});
+}
+$("eMonth").onchange=renderExp;
+$("expForm").onsubmit=async e=>{e.preventDefault();const amount=parseInt(($("xAmt").value||"").replace(/[^0-9]/g,""),10),date=$("xDate").value;
+  if(!amount||!date){$("xOut").textContent="Tareekh aur raqam likhein.";return}
+  MAIN.expenses=MAIN.expenses||[];MAIN.expenses.push({id:"X"+Date.now().toString(36),date,cat:$("xCat").value,amount,note:$("xNote").value.trim()});
+  $("eMonth").value=date.slice(0,7);renderExp();$("xBtn").disabled=true;
+  try{await saveMain([]);$("xOut").textContent=fmt(amount)+" ka kharcha darj ho gaya.";$("xAmt").value="";$("xNote").value=""}catch(err){$("xOut").textContent="Save nahi ho saka. Dobara koshish karein."}
+  $("xBtn").disabled=false};
+
+/* ---- reports + export ---- */
+function renderRep(){
+  const ms=[];for(let i=0;i>=-11;i--)ms.push(addM(curKey,i));
+  $("repBody").innerHTML=ms.map(m=>{let due=0,pd=0,occ=0;MAIN.shops.forEach(s=>{if(!s.tenant||!s.start||s.start>m)return;occ++;if(shopPays(s.code)[m])pd++;else due+=s.rent});
+    const g=gotOf(m),x=expOf(m);return `<tr><td>${mLabel(m)}</td><td class="num">${fmt(g)}</td><td class="num">${fmt(due)}</td><td class="num">${fmt(x)}</td><td class="num"><b>${fmt(g-x)}</b></td><td class="num">${pd} / ${occ}</td></tr>`}).join("");
+  $("repShops").innerHTML=MAIN.shops.filter(s=>s.tenant).map(s=>{const d=duesOf(s);
+    return `<tr><td class="code">${s.code}</td><td>${esc(s.tenant)}</td><td>${d.length?`<span class="pill bad">${d.length}</span>`:`<span class="pill ok">0</span>`}</td><td class="num">${fmt(d.length*s.rent)}</td><td class="num">${s.deposit?fmt(s.deposit):"—"}</td><td class="num">${esc(s.agreeEnd||"—")}</td></tr>`}).join("")||`<tr><td colspan="6" class="note">Abhi koi dukandar add nahi hua.</td></tr>`;
+}
+async function saveFile(name,data,type){if(!DL){$("rMsg").textContent="Is view mein download mumkin nahi.";return}
+  try{await DL.save({filename:name,data:new Blob([data],{type})});$("rMsg").textContent=name+" download ho gayi."}catch(e){$("rMsg").textContent=e?.code==="declined"?"Download cancel ho gaya.":"Download nahi ho saka."}}
+$("dlCsv").onclick=()=>{const rows=[["Serial no.","Dukan","Dukandar","Mahina","Raqam","Tareeqa","Paid time"]];
+  MAIN.payments.filter(p=>!p.shop.includes("~old~")).sort((a,b)=>a.rno.localeCompare(b.rno)).forEach(p=>{const s=MAIN.shops.find(x=>x.code===p.shop)||{};rows.push([serialOf(p),p.shop,s.tenant||"",mLong(p.month),p.amount,p.method,when(p.paidAt)])});
+  saveFile("kiraya-raseedein-"+curKey+".csv","﻿"+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n"),"text/csv")};
+$("dlBak").onclick=()=>saveFile("market-backup-"+new Date().toISOString().slice(0,10)+".json",JSON.stringify(MAIN,null,2),"application/json");
+
+function openShopSheet(code){openShop=code;$("shopSheet").hidden=false;renderShop(!MAIN.shops.find(s=>s.code===code).tenant)}
+function closeShop(){$("shopSheet").hidden=true;openShop=null;renderLL()}
+function renderShop(editMode){
+  const s=MAIN.shops.find(x=>x.code===openShop),S=SETS(),box=$("shopInner");
+  const form=`<form id="tForm" class="card" novalidate>
+      <h3 style="font-size:1.15rem">${s.tenant?"Dukandar ki tafseel badlein":"Dukandar add karein (sirf ek dafa)"}</h3>
+      <div class="row2"><label for="tName">Dukandar ka naam<input id="tName" value="${esc(s.tenant)}" placeholder="Misaal: Ahmed Khan"></label><label for="tPhone">Phone<input id="tPhone" inputmode="tel" value="${esc(s.phone)}"></label></div>
+      <div class="row3"><label for="tCnic">CNIC (optional)<input id="tCnic" value="${esc(s.cnic)}" placeholder="xxxxx-xxxxxxx-x"></label><label for="tRent">Mahana kiraya (Rs)<input id="tRent" inputmode="numeric" value="${s.rent}"></label>
+        <label for="tStart">Kiraya kab se<select id="tStart">${monthsFrom(addM(curKey,-23)).map(mm=>`<option value="${mm}" ${(s.start||curKey)===mm?"selected":""}>${mLabel(mm)}</option>`).join("")}</select></label></div>
+      <div class="row2"><label for="tDep">Security deposit / advance (Rs)<input id="tDep" inputmode="numeric" value="${s.deposit||""}" placeholder="Misaal: 105000"></label>
+        <label for="tAgree">Agreement khatam hone ki tareekh<input id="tAgree" type="date" value="${esc(s.agreeEnd||"")}"></label></div>
+      <label for="tPin">Login PIN (6 hindse)<div style="display:flex;gap:8px"><input id="tPin" class="pinbox" inputmode="numeric" maxlength="6" value="${s.pin}"><button type="button" class="btn btn-ghost" id="tNewPin">Naya</button></div></label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-accent" type="submit" id="tSave">Save karein</button>${s.tenant?`<button class="btn btn-ghost" type="button" id="tCancel">Wapas</button><button class="btn btn-ghost" type="button" id="tRemove" style="color:var(--bad)">Dukandar hatayein</button>`:""}</div>
+      <p id="tErr" class="err"></p></form>`;
+  let body;
+  if(editMode||!s.tenant){body=form}
+  else{
+    const ms=monthsFrom(s.start);const by={};MAIN.payments.filter(p=>p.shop===s.code).forEach(p=>by[p.month]=p);
+    const total=Object.values(by).reduce((n,p)=>n+p.amount,0),baqi=ms.filter(mm=>mm<=curKey&&!by[mm]).length;
+    body=`<div class="card" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+        <div><b>${esc(s.tenant)}</b><div class="note">${esc(s.phone||"Phone nahi")}${s.cnic?" · CNIC "+esc(s.cnic):""} · Kiraya ${fmt(s.rent)} · Shuru ${s.start?mLabel(s.start):"—"}</div>
+        <div class="note">Deposit ${s.deposit?fmt(s.deposit):"—"} · Agreement khatam ${esc(s.agreeEnd||"—")}</div>
+        <div class="note">Login: Code <b class="code">${s.code}</b> · PIN <b class="pinbox">${s.pin}</b></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" id="tLogin">Login detail copy</button>${baqi?`<button class="btn btn-ghost" id="tRemind">Reminder copy</button>`:""}<button class="btn btn-ghost" id="tEdit">Tafseel badlein</button></div></div>
+      <div class="stats" style="margin:0"><div class="stat"><b>${fmt(total)}</b><span>Kul wasool</span></div><div class="stat"><b>${baqi}</b><span>Baqi mahine</span></div><div class="stat"><b>${fmt(baqi*s.rent)}</b><span>Baqi raqam</span></div></div>
+      <div class="card" style="display:grid;gap:12px">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:end">
+          <div><h3 style="font-size:1.15rem">Mahina tick karein</h3><p class="note">Jis mahine ka kiraya mila, us ke dabbe par tick lagayein.</p></div>
+          <label for="tkMethod" style="min-width:180px">Kis tareeqe se mila<select id="tkMethod"><option>Naqd (cash)</option><option>JazzCash</option><option>Easypaisa</option><option>Bank transfer</option><option>Cheque</option></select></label>
+        </div>
+        <div class="months">${ms.map(mm=>{const p=by[mm];return `<div class="mon ${p?"paid":""}">
+          <div class="top"><b>${mLabel(mm)}</b><input type="checkbox" class="tick" id="tk-${mm}" data-tick="${mm}" ${p?"checked":""} aria-label="${mLabel(mm)} ka kiraya paid"></div>
+          ${p?`<span class="when">Paid · ${esc(when(p.paidAt))}</span><span class="note">${fmt(p.amount)} · ${esc(p.method)} · ${esc(serialOf(p))}</span>`:`<span class="note">${mm>curKey?"Agla mahina":"Baqi"} · ${fmt(s.rent)}</span>`}
+          <div class="acts">${p?`<button class="mini go" data-ldoc="receipt" data-m="${mm}">Raseed</button>`:`<button class="mini" data-ldoc="invoice" data-m="${mm}">Invoice</button>`}</div>
+          <div class="acts" id="un-${mm}" hidden><span class="note">Tick hatayein?</span><button class="mini del" data-untick="${mm}">Haan, hatayein</button><button class="mini" data-keep="${mm}">Nahi</button></div>
+        </div>`}).join("")}</div>
+      </div>`;
+  }
+  box.innerHTML=`<div class="sheet-head"><div><span class="eyebrow">Dukan</span><h2 id="shTitle" style="font-size:1.8rem">${s.code}${s.tenant?" · "+esc(s.tenant):""}</h2></div><button class="btn btn-ghost" id="shClose">Band karein</button></div>${body}`;
+  $("shClose").onclick=closeShop;
+  const tf=$("tForm");
+  if(tf){
+    $("tNewPin").onclick=()=>{$("tPin").value=newPin()};
+    if($("tCancel"))$("tCancel").onclick=()=>renderShop(false);
+    if($("tRemove"))$("tRemove").onclick=async e=>{const b=e.target;if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Pakka? Purana hisaab rahega";return}
+      const old=await boxId(s.code,s.pin);Object.assign(s,{tenant:"",phone:"",cnic:"",start:"",deposit:0,agreeEnd:"",pin:newPin()});
+      MAIN.payments=MAIN.payments.map(p=>p.shop===s.code?{...p,shop:s.code+"~old~"+Date.now()}:p);
+      try{await saveMain([s.code],[old]);renderShop(false)}catch(err){$("tErr").textContent="Save nahi ho saka."}};
+    tf.onsubmit=async e=>{e.preventDefault();
+      const name=$("tName").value.trim(),pin=$("tPin").value.trim(),rent=parseInt(($("tRent").value||"").replace(/[^0-9]/g,""),10);
+      if(!name){$("tErr").textContent="Dukandar ka naam likhein.";return}
+      if(!rent){$("tErr").textContent="Mahana kiraya likhein.";return}
+      if(!/^\d{6}$/.test(pin)){$("tErr").textContent="PIN 6 hindson ka hona chahiye.";return}
+      const old=pin!==s.pin?[await boxId(s.code,s.pin)]:[];
+      Object.assign(s,{tenant:name,phone:$("tPhone").value.trim(),cnic:$("tCnic").value.trim(),rent,start:$("tStart").value,pin,
+        deposit:parseInt(($("tDep").value||"").replace(/[^0-9]/g,""),10)||0,agreeEnd:$("tAgree").value});
+      $("tSave").disabled=true;
+      try{await saveMain([s.code],old);renderShop(false)}catch(err){$("tErr").textContent="Save nahi ho saka. Dobara koshish karein.";$("tSave").disabled=false}};
+    return;
+  }
+  $("tEdit").onclick=()=>renderShop(true);
+  const cp=(b,t)=>navigator.clipboard.writeText(t).then(()=>{b.textContent="Copied ✓"},()=>{b.textContent="Copy nahi hua"});
+  $("tLogin").onclick=e=>cp(e.target,`Assalam o Alaikum ${s.tenant} sahib,\n${S.market} mein apna kiraya, invoice aur raseed dekhne ke liye:\nShop Code: ${s.code}\nPIN: ${s.pin}\nYe PIN kisi ko na batayein.`);
+  if($("tRemind"))$("tRemind").onclick=e=>cp(e.target,reminderText(s));
+  box.querySelectorAll("[data-tick]").forEach(cb=>cb.onchange=async()=>{
+    const mm=cb.dataset.tick;
+    if(cb.checked){
+      MAIN.rseq=(MAIN.rseq||0)+1;
+      MAIN.payments.push({rno:"R-"+String(MAIN.rseq).padStart(4,"0"),shop:s.code,month:mm,amount:s.rent,method:$("tkMethod").value,paidAt:new Date().toISOString()});
+      const meth=$("tkMethod").value;renderShop(false);$("tkMethod").value=meth;
+      try{await saveMain([s.code])}catch(e){}
+    }else{cb.checked=true;$("un-"+mm).hidden=false}
+  });
+  box.querySelectorAll("[data-keep]").forEach(b=>b.onclick=()=>{$("un-"+b.dataset.keep).hidden=true});
+  box.querySelectorAll("[data-untick]").forEach(b=>b.onclick=async()=>{
+    MAIN.payments=MAIN.payments.filter(p=>!(p.shop===s.code&&p.month===b.dataset.untick));renderShop(false);try{await saveMain([s.code])}catch(e){}});
+  box.querySelectorAll("[data-ldoc]").forEach(b=>b.onclick=()=>{const mm=b.dataset.m;showDoc(b.dataset.ldoc,S,s,mm,MAIN.payments.find(p=>p.shop===s.code&&p.month===mm))});
+}
+
+/* settings */
+const SF={market:"stMarket",addr:"stAddr",owner:"stOwner",phone:"stPhone",jn:"stJn",jt:"stJt",en:"stEn",et:"stEt",bn:"stBn",bi:"stBi",bt:"stBt",note:"stNote"};
+function fillSettings(){const S=SETS();for(const k in SF)$(SF[k]).value=S[k]||""}
+$("setForm").onsubmit=async e=>{e.preventDefault();if(!MAIN){$("stOut").textContent="Pehle Landlord panel mein market set up karein.";return}
+  const S={};for(const k in SF)S[k]=$(SF[k]).value.trim();if(!S.market)S.market=DEFAULT_SET.market;MAIN.settings=S;
+  $("stBtn").disabled=true;$("stOut").textContent="Save ho raha hai, sab dukanon ko update kiya ja raha hai…";
+  try{await saveMain(MAIN.shops.map(s=>s.code));$("stOut").textContent="Saved. Har dukandar ko naye payment methods nazar aayenge.";renderLL()}
+  catch(err){$("stOut").textContent="Save nahi ho saka. Dobara koshish karein."}
+  $("stBtn").disabled=false};
+
+function showTab(t){if((t==="E"||t==="R")&&!MAIN)t="L";["L","E","R","P","S"].forEach(x=>{$("tab"+x).setAttribute("aria-selected",x===t);$("view"+x).hidden=x!==t});
+  if(t==="P")fillSettings();if(t==="E")renderExp();if(t==="R")renderRep();if(t==="L"&&MAIN)renderLL()}
+$("tabE").onclick=()=>showTab("E");$("tabR").onclick=()=>showTab("R");
+$("tabL").onclick=()=>showTab("L");$("tabP").onclick=()=>showTab("P");$("tabS").onclick=()=>showTab("S");
+
 (async()=>{
-  const C=window.claude;if(!C||!C.use){render();return}
-  const [d,u,dl]=await Promise.all([C.use('db'),C.use('user'),C.use('downloads')]);
-  db=d;downloads=dl;
-  try{isAdmin=u?await u.canEdit():false}catch(_){isAdmin=false}
-  if(!db){render();return}
-  $('#tabs').hidden=!isAdmin;
-  db.doc('meta/settings').onSnapshot(sn=>{if(sn.exists){settings={...settings,...sn.data()};applySettings();const a=document.activeElement;if(view.tab!=='settings'&&!(a&&a.matches&&a.matches('input,textarea,select')))render()}},()=>{});
-  applySettings();
-  if(isAdmin){
-    db.collection('shops').onSnapshot(sn=>{shops=sn.docs.map(x=>x.data());loaded=true;const a=document.activeElement;if(a&&a.matches&&a.matches('input,textarea,select'))return;if(view.tab==='settings'||view.tab==='add'||view.tab==='tenant')return;render()},()=>{loaded=true;render()});
-  }
-  view.tab=isAdmin?'shops':'tenant';
-  if(/^MK-/i.test(location.hash.slice(1)))view.tab='tenant';
-  render();
+  if(!window.claude?.use){$("noDb").hidden=false;return}
+  const [db,user,dl]=await Promise.all([claude.use("db"),claude.use("user"),claude.use("downloads")]);
+  DL=dl;$("docDl").hidden=!DL;
+  if(!db){$("noDb").hidden=false;return}
+  DB=db;if(!user)return;
+  if(!(await user.isOwner()))return;
+  const uid=await user.id();if(!uid)return;
+  mainRef=db.collection("data/users/"+uid).doc("market");
+  $("tabs").hidden=false;showTab("L");
+  try{const snap=await mainRef.get();
+    if(snap.exists){MAIN=snap.data();migrate();$("ll").hidden=false;$("sSync").textContent="Saved ✓";renderLL()}
+    else $("setup").hidden=false;
+  }catch(e){$("noDb").hidden=false}
 })();
-})();
-
 </script>
